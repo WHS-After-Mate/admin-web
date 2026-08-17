@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+#보안 캐시 제외
+.env
+src/.env
+__pycache__/
+*.pyc
