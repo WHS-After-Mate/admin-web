@@ -1,0 +1,162 @@
+@import '../../styles/modal.css';
+
+/* 1. 모달 전체 너비 및 패딩 확장 */
+/* 모달 전체 너비 및 패딩을 2번째 이미지 크기(가로 약 1100px)로 확장 */
+.modal-container.xlarge,
+.modal-container {
+    max-width: 1140px !important;
+    width: 92% !important;
+    padding: 32px 36px !important;
+    border-radius: 24px !important;
+}
+
+/* 2. 모달 내부 요소들 간격 및 글자 크기 조정 */
+.treatment-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.treatment-list-box {
+    background-color: #fcfcfc;
+    border: 1px solid #f0f0f0;
+    border-radius: 16px;
+    padding: 24px !important;
+    /* 내부 여백 확장 */
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* 3. 각 입력창 및 버튼 높이감 조정 */ 
+.treatment-item-row .form-input,
+.treatment-item-row .remove-item-btn {
+    height: 52px;
+    font-size: 15px;
+}
+
+.add-item-btn {
+    height: 50px;
+    font-size: 15px;
+}
+
+/* 2. 관리 시간 (시, 분) 세부 레이아웃 */
+.time-select-group {
+    display: flex;
+    gap: 8px;
+}
+
+/* 3. 인코딩 안전한 SVG 화살표 처리 */
+.select-input {
+    background-color: #ffffff;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23333333' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 12px;
+    padding-right: 36px;
+}
+
+/* 4. 검색용 input 스타일 */
+.search-input {
+    background-color: #ffffff;
+}
+
+/* 5. 1:N 카드 목록 컨테이너 */
+.treatment-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.section-title-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.section-desc {
+    font-size: 12px;
+    color: #888888;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.treatment-list-box {
+    background-color: #fcfcfc;
+    border: 1px solid #f0f0f0;
+    border-radius: 16px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* 6. 행 내부 정렬 및 삭제 버튼 */
+.treatment-item-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.sub-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #444444;
+    margin-bottom: 4px;
+}
+
+.flex-2 {
+    flex: 2;
+}
+
+.flex-1 {
+    flex: 1;
+}
+
+/* 5. 삭제 'x' 버튼 디자인 */
+.remove-item-btn {
+    height: 48px;
+    width: 44px;
+    background-color: #ffffff;
+    border: 1px solid #e4e4e7;
+    border-radius: 10px;
+    color: #666666;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.remove-item-btn:hover {
+    background-color: #fee2e2;
+    border-color: #fca5a5;
+    color: #ef4444;
+}
+
+/* 6. '+ 관리 추가' 대시 형태 버튼 */
+.add-item-btn {
+    width: 100%;
+    height: 46px;
+    background-color: #ffffff;
+    border: 1px dashed #d1d5db;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 800;
+    color: #111111;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+    margin-top: 4px;
+}
+
+.add-item-btn:hover {
+    background-color: #f4f4f5;
+    border-color: #111111;
+}
