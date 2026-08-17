@@ -1,0 +1,10 @@
+/* src/pages/Customer/CustomerModal.css */
+@import '../../styles/modal.css';
+
+/* 날짜 입력창 폰트 및 커스텀 스타일 */
+.date-input {
+    font-family: inherit;
+    color: #555555;
+}
+
+/* 특수 폼 커스텀이 필요할 경우 여기에만 추가 */

@@ -1,0 +1,21 @@
+/* src/styles/variables.css */
+:root {
+    /* Colors */
+    --primary: #1a202c;
+    --primary-hover: #2d3748;
+    --bg-main: #f8f9fa;
+    --bg-card: #ffffff;
+    --border-color: #e2e8f0;
+    --text-main: #111111;
+    --text-muted: #718096;
+    --text-light: #a0aec0;
+
+    /* Modal Overlay */
+    --overlay-bg: rgba(0, 0, 0, 0.4);
+
+    /* Border Radius */
+    --radius-sm: 8px;
+    --radius-md: 10px;
+    --radius-lg: 12px;
+    --radius-xl: 20px;
+}

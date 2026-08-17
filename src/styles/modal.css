@@ -1,0 +1,184 @@
+/* src/styles/modal.css */
+@import './variables.css';
+
+/* 1. 모달 오버레이 & 컨테이너 */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: var(--overlay-bg, rgba(0, 0, 0, 0.4));
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(2px);
+}
+
+.modal-container {
+    background-color: #ffffff;
+    width: 100%;
+    max-width: 520px;
+    max-height: 85vh;
+    border-radius: 20px;
+    padding: 32px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    box-sizing: border-box;
+    overflow-y: auto;
+    animation: modalFadeIn 0.2s ease-out;
+}
+
+.modal-container.large {
+    max-width: 600px;
+}
+
+/* 2. 헤더 및 닫기 버튼 */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 16px;
+}
+
+.modal-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: #111111;
+    margin: 0 0 4px 0;
+}
+
+.modal-subtitle {
+    font-size: 13px;
+    color: #888888;
+    margin: 0;
+}
+
+.modal-close-btn,
+.close-btn {
+    background: #f4f4f5;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    color: #666666;
+    transition: background 0.2s, color 0.2s;
+}
+
+.modal-close-btn:hover,
+.close-btn:hover {
+    background: #e4e4e7;
+    color: #1a202c;
+}
+
+/* 3. 모달 바디 & 공통 폼 스타일 */
+.modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.form-row {
+    display: flex;
+    gap: 16px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+}
+
+.form-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #111111;
+}
+
+.form-input,
+.form-textarea {
+    width: 100%;
+    border: 1px solid #e4e4e7;
+    border-radius: 10px;
+    font-size: 14px;
+    color: #111111;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+}
+
+.form-input {
+    height: 48px;
+    padding: 0 16px;
+}
+
+.form-textarea {
+    padding: 14px 16px;
+    resize: vertical;
+    font-family: inherit;
+}
+
+.form-input:focus,
+.form-textarea:focus {
+    border-color: #111111;
+}
+
+/* 4. 하단 버튼 영역 */
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.btn-cancel {
+    background-color: #ffffff;
+    border: 1px solid #e4e4e7;
+    color: #111111;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-cancel:hover {
+    background-color: #f4f4f5;
+}
+
+.btn-submit {
+    background-color: #111111;
+    border: none;
+    color: #ffffff;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-submit:hover {
+    background-color: #333333;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
