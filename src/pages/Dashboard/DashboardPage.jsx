@@ -34,7 +34,7 @@ export default function DashboardPage({
           className="add-btn"
           onClick={onOpenCustomerModal}
         >
-          + 신규 고객 등록  {/* 👈 문구 수정 완료 */}
+          + 신규 고객 등록 
         </button>
       </div>
 

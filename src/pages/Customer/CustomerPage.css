@@ -227,7 +227,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
-  /* ✨ 텍스트 줄바꿈 방지! */
+  /* 텍스트 줄바꿈 방지! */
 }
 
 .manage-btn:hover {

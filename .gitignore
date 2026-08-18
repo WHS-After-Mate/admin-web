@@ -25,5 +25,7 @@ dist-ssr
 #보안 캐시 제외
 .env
 src/.env
+*.env
+.env.*
 __pycache__/
 *.pyc

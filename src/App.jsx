@@ -48,25 +48,34 @@ function AdminLayout({
 
       {/* --- 공통 팝업/모달 영역 --- */}
 
-      {/* 1) 진료 / 관리 등록 모달 */}
-      <TreatmentModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
+      {/* 1) 진료/관리 등록 모달 */}
+      {isModalOpen && (
+        <TreatmentModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+        />
+      )}
 
       {/* 2) 신규 고객 등록 모달 */}
-      <CustomerModal
-        isOpen={isCustomerModalOpen}
-        onClose={() => setIsCustomerModalOpen(false)}
-      />
+      {isCustomerModalOpen && (
+        <CustomerModal
+          isOpen={isCustomerModalOpen}
+          onClose={() => setIsCustomerModalOpen(false)}
+        />
+      )}
 
       {/* 3) 고객 상세 정보 모달 */}
-      <CustomerDetailModal
-        isOpen={isDetailModalOpen}
-        onClose={() => setIsDetailModalOpen(false)}
-        customerData={selectedCustomer} 
-        onOpenTreatmentModal={() => setIsModalOpen(true)}
-      />
+      {isDetailModalOpen && (
+        <CustomerDetailModal
+          isOpen={isDetailModalOpen}
+          onClose={() => setIsDetailModalOpen(false)}
+          customerData={selectedCustomer}
+          onOpenTreatmentModal={(customer) => {
+            setIsDetailModalOpen(false); // 1. 상세 모달을 닫고
+            setIsModalOpen(true);        // 2. 관리 등록 모달을 엽니다
+          }}
+        />
+      )}
     </div>
   );
 }

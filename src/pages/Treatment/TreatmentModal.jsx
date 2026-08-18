@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from '../../components/common/Modal';
 import './TreatmentModal.css';
 
-// 💡 업로드해주신 표 이미지 분석을 통한 관리명-관리부위 1:N 데이터 정의
+// 💡 관리명-관리부위 1:N 데이터 정의
 const TREATMENT_DATA = [
     {
         name: '울쎄라 리프팅',
@@ -37,23 +37,36 @@ const TREATMENT_DATA = [
 export default function TreatmentModal({
     isOpen,
     onClose,
-    customerName = '김지수',
+    customer = {},         // 👈 고객 객체 전체 전달 (id, name 등 접근)
     onSubmitTreatment,
+    onRefreshData,          // 👈 등록 완료 후 목록/상세 갱신 콜백
 }) {
     // 오늘 날짜 및 기본 시간(시, 분) 세팅
     const today = new Date().toISOString().split('T')[0];
-    const currentHour = `${String(new Date().getHours()).padStart(2, '0')}시`;
-    const currentMinute = `${String(Math.floor(new Date().getMinutes() / 5) * 5).padStart(2, '0')}분`;
+    const currentHour = String(new Date().getHours()).padStart(2, '0');
+    const currentMinute = String(Math.floor(new Date().getMinutes() / 5) * 5).padStart(2, '0');
 
     const [date, setDate] = useState(today);
     const [hour, setHour] = useState(currentHour);
     const [minute, setMinute] = useState(currentMinute);
     const [memo, setMemo] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // 동적 관리 항목 배열 (1:N 관계)
+    // 동적 관리 항목 배열
     const [treatmentItems, setTreatmentItems] = useState([
         { id: Date.now(), category: '', area: '', count: 1 },
     ]);
+
+    // 모달이 열릴 때 폼 초기화
+    useEffect(() => {
+        if (isOpen) {
+            setDate(new Date().toISOString().split('T')[0]);
+            setHour(String(new Date().getHours()).padStart(2, '0'));
+            setMinute(String(Math.floor(new Date().getMinutes() / 5) * 5).padStart(2, '0'));
+            setMemo('');
+            setTreatmentItems([{ id: Date.now(), category: '', area: '', count: 1 }]);
+        }
+    }, [isOpen]);
 
     // "+ 관리 추가" 버튼 핸들러
     const handleAddItem = () => {
@@ -78,7 +91,6 @@ export default function TreatmentModal({
             prev.map((item) => {
                 if (item.id === id) {
                     const updated = { ...item, [field]: value };
-                    // 관리명이 바뀌면 기존에 선택되었던 부위를 초기화
                     if (field === 'category') {
                         updated.area = '';
                     }
@@ -89,29 +101,76 @@ export default function TreatmentModal({
         );
     };
 
-    // 제출 처리
-    const handleSubmit = (e) => {
+    // 백엔드 제출 처리
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
+        // 1. 유효성 검사
         const isInvalid = treatmentItems.some((item) => !item.category || !item.area);
         if (isInvalid) {
             alert('모든 관리 항목의 관리명과 관리 부위를 선택해 주세요.');
             return;
         }
 
-        const payload = {
-            date,
-            time: `${hour} ${minute}`,
-            treatments: treatmentItems,
-            memo,
-        };
-
-        if (onSubmitTreatment) {
-            onSubmitTreatment(payload);
+        // 고객 ID 확인 (DB FK 필수값)
+        const customerId = customer.id || customer.customer_id;
+        if (!customerId) {
+            alert('고객 정보(ID)를 찾을 수 없습니다.');
+            return;
         }
 
-        alert('관리가 성공적으로 등록되었습니다.');
-        onClose();
+        try {
+            setIsSubmitting(true);
+            const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+
+            // 2. 백엔드 DB 표준 규격으로 Payload 구성
+            const payload = {
+                customer_id: customerId,
+                treatment_date: date,
+                treatment_time: `${hour}:${minute}:00`, // HH:mm:ss 포맷
+                memo: memo,
+                items: treatmentItems.map((item) => ({
+                    treatment_name: item.category,
+                    treatment_area: item.area,
+                    count: item.count,
+                })),
+            };
+
+            // 3. 백엔드 API 호출 (POST /api/treatments)
+            const response = await fetch(`${baseUrl}/api/treatments`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    // 'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `서버 오류 발생: ${response.status}`);
+            }
+
+            const savedData = await response.json();
+
+            if (onSubmitTreatment) {
+                onSubmitTreatment(savedData);
+            }
+
+            alert('관리가 성공적으로 등록되었습니다.');
+
+            // 부모 컴포넌트 목록/이력 데이터 새로고침
+            if (onRefreshData) {
+                await onRefreshData();
+            }
+
+            onClose();
+        } catch (error) {
+            console.error('관리 등록 실패:', error);
+            alert(`관리 등록 중 오류가 발생했습니다: ${error.message}`);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -119,7 +178,7 @@ export default function TreatmentModal({
             isOpen={isOpen}
             onClose={onClose}
             title="관리 등록"
-            subtitle={`${customerName} 고객의 새로운 관리 내역을 등록합니다.`}
+            subtitle={`${customer.name || '고객'} 님의 새로운 관리 내역을 등록합니다.`}
             size="xlarge"
         >
             <form onSubmit={handleSubmit} className="treatment-form">
@@ -133,6 +192,7 @@ export default function TreatmentModal({
                             onChange={(e) => setDate(e.target.value)}
                             className="form-input date-input"
                             required
+                            disabled={isSubmitting}
                         />
                     </div>
 
@@ -143,10 +203,15 @@ export default function TreatmentModal({
                                 value={hour}
                                 onChange={(e) => setHour(e.target.value)}
                                 className="form-input select-input"
+                                disabled={isSubmitting}
                             >
                                 {Array.from({ length: 24 }, (_, i) => {
-                                    const h = `${String(i).padStart(2, '0')}시`;
-                                    return <option key={h} value={h}>{h}</option>;
+                                    const h = String(i).padStart(2, '0');
+                                    return (
+                                        <option key={h} value={h}>
+                                            {h}시
+                                        </option>
+                                    );
                                 })}
                             </select>
 
@@ -154,10 +219,15 @@ export default function TreatmentModal({
                                 value={minute}
                                 onChange={(e) => setMinute(e.target.value)}
                                 className="form-input select-input"
+                                disabled={isSubmitting}
                             >
                                 {Array.from({ length: 12 }, (_, i) => {
-                                    const m = `${String(i * 5).padStart(2, '0')}분`;
-                                    return <option key={m} value={m}>{m}</option>;
+                                    const m = String(i * 5).padStart(2, '0');
+                                    return (
+                                        <option key={m} value={m}>
+                                            {m}분
+                                        </option>
+                                    );
                                 })}
                             </select>
                         </div>
@@ -173,7 +243,6 @@ export default function TreatmentModal({
                         </p>
                     </div>
 
-                    {/* datalist: 직접 입력(검색) + 선택이 동시에 가능한 HTML 표준 데이터리스트 */}
                     <datalist id="treatment-list-options">
                         {TREATMENT_DATA.map((data) => (
                             <option key={data.name} value={data.name} />
@@ -191,7 +260,7 @@ export default function TreatmentModal({
 
                             return (
                                 <div key={item.id} className="treatment-item-row">
-                                    {/* 1. 검색 + 클릭 선택이 모두 가능한 Input (datalist 연결) */}
+                                    {/* 1. 관리 검색 */}
                                     <div className="form-group flex-2">
                                         <label className="sub-label">관리 검색</label>
                                         <input
@@ -203,10 +272,11 @@ export default function TreatmentModal({
                                             }
                                             placeholder="관리명을 입력하거나 선택하세요"
                                             className="form-input search-input"
+                                            disabled={isSubmitting}
                                         />
                                     </div>
 
-                                    {/* 2. 연동된 관리 부위 선택 */}
+                                    {/* 2. 관리 부위 선택 */}
                                     <div className="form-group flex-2">
                                         <label className="sub-label">관리 부위</label>
                                         <select
@@ -215,7 +285,7 @@ export default function TreatmentModal({
                                                 handleItemChange(item.id, 'area', e.target.value)
                                             }
                                             className="form-input select-input"
-                                            disabled={!selectedCategoryData}
+                                            disabled={!selectedCategoryData || isSubmitting}
                                         >
                                             <option value="">
                                                 {selectedCategoryData ? '부위 선택' : '관리 선택 필요'}
@@ -237,6 +307,7 @@ export default function TreatmentModal({
                                                 handleItemChange(item.id, 'count', Number(e.target.value))
                                             }
                                             className="form-input select-input"
+                                            disabled={isSubmitting}
                                         >
                                             {Array.from({ length: 10 }, (_, i) => i + 1).map((cnt) => (
                                                 <option key={cnt} value={cnt}>
@@ -252,6 +323,7 @@ export default function TreatmentModal({
                                         className="remove-item-btn"
                                         onClick={() => handleRemoveItem(item.id)}
                                         title="관리 삭제"
+                                        disabled={isSubmitting}
                                     >
                                         ✕
                                     </button>
@@ -264,6 +336,7 @@ export default function TreatmentModal({
                             type="button"
                             className="add-item-btn"
                             onClick={handleAddItem}
+                            disabled={isSubmitting}
                         >
                             + 관리 추가
                         </button>
@@ -279,16 +352,26 @@ export default function TreatmentModal({
                         value={memo}
                         onChange={(e) => setMemo(e.target.value)}
                         className="form-textarea"
+                        disabled={isSubmitting}
                     />
                 </div>
 
                 {/* 하단 버튼 */}
                 <div className="modal-footer">
-                    <button type="button" className="btn-cancel" onClick={onClose}>
+                    <button
+                        type="button"
+                        className="btn-cancel"
+                        onClick={onClose}
+                        disabled={isSubmitting}
+                    >
                         취소
                     </button>
-                    <button type="submit" className="btn-submit">
-                        관리 등록
+                    <button
+                        type="submit"
+                        className="btn-submit"
+                        disabled={isSubmitting}
+                    >
+                        {isSubmitting ? '등록 중...' : '관리 등록'}
                     </button>
                 </div>
             </form>
