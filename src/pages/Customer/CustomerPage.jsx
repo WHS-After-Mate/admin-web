@@ -1,6 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './CustomerPage.css';
+
+/**
+ * careRecords에서 최근 관리명/날짜를 추출하는 유틸
+ */
+function getLatestCareFromRecords(careRecords) {
+  if (!Array.isArray(careRecords) || careRecords.length === 0) {
+    return { latestCareName: null, latestCareDate: null };
+  }
+  // 날짜 최신순 정렬
+  const sorted = [...careRecords].sort((a, b) => {
+    const dateA = a.careDate || a.care_date || '';
+    const dateB = b.careDate || b.care_date || '';
+    return dateB.localeCompare(dateA);
+  });
+  const latest = sorted[0];
+  return {
+    latestCareName: latest.careName || latest.care_name || latest.treatmentName || null,
+    latestCareDate: latest.careDate || latest.care_date || null,
+  };
+}
 
 export default function CustomerPage({
   onOpenModal,        // 관리 등록 모달 열기 함수
@@ -18,7 +38,7 @@ export default function CustomerPage({
   const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4100';
 
   // 2. 백엔드 API 데이터 페칭 함수 (통합 및 정규화 버전)
-  const fetchCustomers = async (query = '') => {
+  const fetchCustomers = useCallback(async (query = '') => {
     try {
       setIsLoading(true);
       setError(null);
@@ -45,16 +65,27 @@ export default function CustomerPage({
 
       // 백엔드 응답 필드명 정규화 (Snake Case & Camel Case 모두 안전하게 파싱)
       const rawList = Array.isArray(data) ? data : data.patients || data.customers || [];
-      const normalizedList = rawList.map((c) => ({
-        id: c.id || c.customer_id,
-        name: c.name || '이름 없음',
-        phone: c.phone || c.phone_number || '-',
-        email: c.email || '-',
-        patientNo: c.patientNo || c.patient_no || '-',
-        clinic: c.clinic || c.clinic_name || '림프드 클리닉',
-        lastTreatment: c.lastTreatment || c.last_treatment || '관리 내역 없음',
-        lastDate: c.lastDate || c.last_date || '-',
-      }));
+      const normalizedList = rawList.map((c) => {
+        // careRecords fallback: latestCareName이 없으면 careRecords에서 추출
+        const careRecords = Array.isArray(c.careRecords) ? c.careRecords : (c.care_records || c.treatments || c.history || []);
+        const { latestCareName, latestCareDate } = getLatestCareFromRecords(careRecords);
+
+        const lastTreatment = c.lastTreatment || c.last_treatment || c.latestCareName || c.latest_care_name || latestCareName || '관리 내역 없음';
+        const lastDate = c.lastDate || c.last_date || c.latestCareDate || c.latest_care_date || latestCareDate || '-';
+        const historyCount = c.historyCount || c.history_count || careRecords.length || 0;
+
+        return {
+          id: c.id || c.customer_id,
+          name: c.name || '이름 없음',
+          phone: c.phone || c.phone_number || '-',
+          email: c.email || '-',
+          patientNo: c.patientNo || c.patient_no || '-',
+          clinic: c.clinic || c.clinic_name || '림프드 클리닉',
+          lastTreatment,
+          lastDate,
+          historyCount,
+        };
+      });
 
       setCustomers(normalizedList);
     } catch (err) {
@@ -63,12 +94,17 @@ export default function CustomerPage({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [baseUrl]);
 
   // 마운트 시 데이터 로드
   useEffect(() => {
     fetchCustomers();
-  }, []);
+  }, [fetchCustomers]);
+
+  // Re-fetch 콜백 (TreatmentModal/CustomerDetailModal에서 호출용)
+  const handleRefreshData = useCallback(() => {
+    fetchCustomers(searchTerm);
+  }, [fetchCustomers, searchTerm]);
 
   // 4. 검색 입력 핸들러
   const handleSearchChange = (e) => {
@@ -82,7 +118,6 @@ export default function CustomerPage({
     try {
       const token = localStorage.getItem('token');
 
-      // { ... } 대신 옵션 객체를 정확히 작성합니다.
       const response = await fetch(`${baseUrl}/api/v1/patients/${customer.id}`, {
         method: 'GET',
         headers: {
@@ -94,7 +129,7 @@ export default function CustomerPage({
       if (response.ok) {
         const result = await response.json();
         const fullCustomerData = result.data || result.patient || result;
-        onOpenDetailModal(fullCustomerData);
+        onOpenDetailModal(fullCustomerData, handleRefreshData);
       } else {
         console.warn(`상세 조회 실패 (Status: ${response.status})`);
         onOpenDetailModal({
@@ -104,9 +139,8 @@ export default function CustomerPage({
           patientNo: customer.patientNo,
           birth: '-',
           memo: '',
-          reservations: [],
-          history: [],
-        });
+          careRecords: [],
+        }, handleRefreshData);
       }
     } catch (err) {
       console.error('상세 데이터 조회 중 네트워크 에러:', err);
@@ -117,9 +151,8 @@ export default function CustomerPage({
         patientNo: customer.patientNo,
         birth: '-',
         memo: '',
-        reservations: [],
-        history: [],
-      });
+        careRecords: [],
+      }, handleRefreshData);
     }
   };
   
@@ -128,7 +161,6 @@ export default function CustomerPage({
       {/* 상단 빵부스러기 (Breadcrumb) 영역 */}
       <div className="top-header">
         <span className="breadcrumb">고객 관리</span>
-        <span className="admin-status">관리자 | 림프드 클리닉</span>
       </div>
 
       {/* 페이지 헤더 & 등록 버튼 */}
@@ -193,8 +225,7 @@ export default function CustomerPage({
                 <div className="clinic-badge-wrapper">
                   <span className="clinic-badge">
                     <span className="dot"></span>
-                    {/* 데이터에 historyCount가 있다면 사용하고, 없으면 기본값 처리 */}
-                    {customer.historyCount ? `${customer.historyCount}건의 관리 이력` : '1건의 관리 이력'}
+                    {customer.historyCount > 0 ? `${customer.historyCount}건의 관리 이력` : '관리 이력 없음'}
                   </span>
                 </div>
 
@@ -216,7 +247,7 @@ export default function CustomerPage({
                   <button
                     className="manage-btn"
                     onClick={() => {
-                      if (onOpenModal) onOpenModal(customer);
+                      if (onOpenModal) onOpenModal(customer, handleRefreshData);
                     }}
                   >
                     관리 등록

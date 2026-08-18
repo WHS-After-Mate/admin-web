@@ -1,15 +1,87 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import CustomerCard from '../../components/common/CustomerCard';
 import './DashboardPage.css';
-
-import { initialDashboardData } from '../../api/mockData';
 
 export default function DashboardPage({
   onOpenCustomerModal,  // 신규 고객 등록 모달 열기
   onOpenDetailModal,    // 고객 상세 모달 열기
   onNavigateToCustomer, // 고객 관리 전체 페이지 이동
 }) {
-  const dashboardData = initialDashboardData || {};
-  const recentCustomers = dashboardData.recentCustomers || [];
+  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4100';
+
+  // 통계 카드 상태
+  const [visitStats, setVisitStats] = useState({
+    yesterdayCount: 0,
+    todayCount: 0,
+    tomorrowCount: 0,
+  });
+
+  // 최근 고객 목록 상태
+  const [recentCustomers, setRecentCustomers] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchVisitStats = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+      };
+      const response = await fetch(`${baseUrl}/api/v1/visit-stats`, { headers });
+      if (!response.ok) throw new Error(`visit-stats 응답 오류: ${response.status}`);
+      const data = await response.json();
+
+      setVisitStats({
+        yesterdayCount: data.yesterday?.count ?? data.yesterdayCount ?? 0,
+        todayCount: data.today?.count ?? data.todayCount ?? 0,
+        tomorrowCount: data.tomorrow?.count ?? data.tomorrowCount ?? 0,
+      });
+    } catch (err) {
+      console.error('방문 통계 조회 실패:', err);
+    }
+  }, [baseUrl]);
+
+  const fetchRecentPatients = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+      };
+      const response = await fetch(`${baseUrl}/api/v1/patients`, { headers });
+      if (!response.ok) throw new Error(`patients 응답 오류: ${response.status}`);
+      const data = await response.json();
+
+      const rawList = Array.isArray(data) ? data : data.patients || [];
+
+      // created_at 최신순 정렬 후 상위 2개만 슬라이싱
+      const sorted = [...rawList].sort((a, b) => {
+        const dateA = new Date(a.created_at || a.createdAt || 0);
+        const dateB = new Date(b.created_at || b.createdAt || 0);
+        return dateB - dateA;
+      });
+
+      setRecentCustomers(sorted.slice(0, 2));
+    } catch (err) {
+      console.error('최근 고객 조회 실패:', err);
+    }
+  }, [baseUrl]);
+
+  // API 데이터 페칭
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true);
+      await Promise.all([fetchVisitStats(), fetchRecentPatients()]);
+      setIsLoading(false);
+    };
+
+    loadData();
+  }, [fetchVisitStats, fetchRecentPatients]);
+
+  // Re-fetch 콜백 (TreatmentModal/CustomerDetailModal에서 호출용)
+  const handleRefreshData = useCallback(async () => {
+    await Promise.all([fetchVisitStats(), fetchRecentPatients()]);
+  }, [fetchVisitStats, fetchRecentPatients]);
 
   return (
     <div className="dashboard-content">
@@ -41,16 +113,16 @@ export default function DashboardPage({
       {/* 3. 통계 요약 카드 3개 영역 (전날/금일/익일) */}
       <div className="stats-grid">
         <div className="stat-card">
-          <span className="card-label">전날 방문 고객</span>
-          <h2 className="card-value">{dashboardData.yesterdayCount ?? 12}</h2>
+          <span className="card-label">전날 신규 고객 수</span>
+          <h2 className="card-value">{visitStats.yesterdayCount}<span className="card-unit">명</span></h2>
         </div>
         <div className="stat-card">
-          <span className="card-label">금일 방문 고객</span>
-          <h2 className="card-value">{dashboardData.todayCount ?? 7}</h2>
+          <span className="card-label">금일 신규 고객 수</span>
+          <h2 className="card-value">{visitStats.todayCount}<span className="card-unit">명</span></h2>
         </div>
         <div className="stat-card">
-          <span className="card-label">익일 예약 고객</span>
-          <h2 className="card-value">{dashboardData.tomorrowCount ?? 8}</h2>
+          <span className="card-label">익일 예약자 수</span>
+          <h2 className="card-value">{visitStats.tomorrowCount}<span className="card-unit">명</span></h2>
         </div>
       </div>
 
@@ -68,42 +140,16 @@ export default function DashboardPage({
         </div>
 
         <div className="customer-card-list">
-          {recentCustomers.length > 0 ? (
-            recentCustomers.map((customer) => (
-              <div key={customer.id} className="customer-row-card">
-                <div className="cust-personal">
-                  <h3 className="cust-name">{customer.name}</h3>
-                  <p className="cust-phone">{customer.phone}</p>
-                  <p className="cust-email">{customer.email}</p>
-                </div>
-
-                <div className="cust-badge-area">
-                  <span className="clinic-badge">
-                    <span className="badge-dot"></span>
-                    {customer.clinic || 'AMRED CLINIC'}
-                  </span>
-                </div>
-
-                <div className="cust-treatment">
-                  <span className="treatment-label">최근 관리</span>
-                  <strong className="treatment-name">
-                    {customer.lastTreatment || '울쎄라 리프팅'}
-                  </strong>
-                  <span className="treatment-date">
-                    {customer.lastDate || '2026-08-02'}
-                  </span>
-                </div>
-
-                <div className="cust-action">
-                  <button
-                    type="button"
-                    className="detail-btn"
-                    onClick={() => onOpenDetailModal && onOpenDetailModal(customer)}
-                  >
-                    상세 보기 →
-                  </button>
-                </div>
-              </div>
+          {isLoading ? (
+            <div className="empty-card">데이터를 불러오는 중입니다...</div>
+          ) : recentCustomers.length > 0 ? (
+            recentCustomers.map((patient) => (
+              <CustomerCard
+                key={patient.id}
+                customer={patient}
+                onOpenDetailModal={onOpenDetailModal}
+                onRefreshData={handleRefreshData}
+              />
             ))
           ) : (
             <div className="empty-card">최근 등록된 고객이 없습니다.</div>

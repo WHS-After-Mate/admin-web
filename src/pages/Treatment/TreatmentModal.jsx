@@ -1,47 +1,74 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Modal from '../../components/common/Modal';
 import './TreatmentModal.css';
 
-// 💡 관리명-관리부위 1:N 데이터 정의
-const TREATMENT_DATA = [
-    {
-        name: '울쎄라 리프팅',
-        areas: ['얼굴 전체', '이중턱', '턱라인', '심부볼', '팔자'],
-    },
-    {
-        name: '인모드 FX',
-        areas: ['이중턱', '턱라인', '볼', '심부볼'],
-    },
-    {
-        name: '리쥬란 스킨부스터',
-        areas: ['얼굴 전체', '눈 밑', '볼', '이마', '목'],
-    },
-    {
-        name: '쥬베룩 스킨부스터',
-        areas: ['얼굴 전체', '볼', '팔자', '이마'],
-    },
-    {
-        name: '입술 필러',
-        areas: ['입술'],
-    },
-    {
-        name: '보톡스',
-        areas: ['미간', '이마', '눈가', '턱', '승모근'],
-    },
-    {
-        name: 'LDM',
-        areas: ['얼굴 전체', '볼', '턱라인'],
-    },
-];
+/* ─────────────────────────────────────────────
+   Custom Select (관리 시간, 횟수 등 단일 선택용)
+   ───────────────────────────────────────────── */
+function CustomSelect({ value, options, onChange, disabled, placeholder }) {
+    const [isOpen, setIsOpen] = useState(false);
+    const ref = useRef(null);
 
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (ref.current && !ref.current.contains(e.target)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const selectedLabel = options.find((o) => o.value === value)?.label || placeholder || '';
+
+    return (
+        <div className="custom-select-wrapper" ref={ref}>
+            <button
+                type="button"
+                className={`custom-select-trigger ${isOpen ? 'open' : ''}`}
+                onClick={() => !disabled && setIsOpen((prev) => !prev)}
+                disabled={disabled}
+            >
+                <span className={`custom-select-text ${!value && placeholder ? 'placeholder' : ''}`}>
+                    {selectedLabel}
+                </span>
+                <svg className="custom-select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#333333" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m6 9 6 6 6-6" />
+                </svg>
+            </button>
+            {isOpen && (
+                <ul className="custom-select-dropdown">
+                    {options.map((opt) => (
+                        <li
+                            key={opt.value}
+                            className={`custom-select-option ${opt.value === value ? 'selected' : ''}`}
+                            onMouseDown={() => {
+                                onChange(opt.value);
+                                setIsOpen(false);
+                            }}
+                        >
+                            {opt.label}
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </div>
+    );
+}
+
+/* ─────────────────────────────────────────────
+   TreatmentModal (메인 모달)
+   ───────────────────────────────────────────── */
 export default function TreatmentModal({
     isOpen,
     onClose,
-    customer = {},         // 👈 고객 객체 전체 전달 (id, name 등 접근)
+    customer = {},
     onSubmitTreatment,
-    onRefreshData,          // 👈 등록 완료 후 목록/상세 갱신 콜백
+    onRefreshData,
 }) {
-    // 오늘 날짜 및 기본 시간(시, 분) 세팅
+    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4100';
+
+    // 오늘 날짜 및 기본 시간
     const today = new Date().toISOString().split('T')[0];
     const currentHour = String(new Date().getHours()).padStart(2, '0');
     const currentMinute = String(Math.floor(new Date().getMinutes() / 5) * 5).padStart(2, '0');
@@ -52,31 +79,75 @@ export default function TreatmentModal({
     const [memo, setMemo] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // 카탈로그 & 부위 API 데이터
+    const [catalog, setCatalog] = useState([]);
+    const [bodyParts, setBodyParts] = useState([]);
+
     // 동적 관리 항목 배열
     const [treatmentItems, setTreatmentItems] = useState([
-        { id: Date.now(), category: '', area: '', count: 1 },
+        { id: Date.now(), careName: '', careType: 'skincare', partOfBody: [], totalSessions: 1 },
     ]);
 
-    // 모달이 열릴 때 폼 초기화
+    // 모달이 열릴 때 폼 초기화 및 API 데이터 로드
     useEffect(() => {
         if (isOpen) {
             setDate(new Date().toISOString().split('T')[0]);
             setHour(String(new Date().getHours()).padStart(2, '0'));
             setMinute(String(Math.floor(new Date().getMinutes() / 5) * 5).padStart(2, '0'));
             setMemo('');
-            setTreatmentItems([{ id: Date.now(), category: '', area: '', count: 1 }]);
+            setTreatmentItems([
+                { id: Date.now(), careName: '', careType: 'skincare', partOfBody: [], totalSessions: 1 },
+            ]);
+            fetchCatalog();
+            fetchBodyParts();
         }
     }, [isOpen]);
+
+    const fetchCatalog = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${baseUrl}/api/v1/treatment-catalog`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token && { Authorization: `Bearer ${token}` }),
+                },
+            });
+            if (!response.ok) throw new Error('카탈로그 조회 실패');
+            const data = await response.json();
+            const list = Array.isArray(data) ? data : data.catalog || data.items || [];
+            setCatalog(list);
+        } catch (err) {
+            console.error('treatment-catalog 로드 실패:', err);
+        }
+    };
+
+    const fetchBodyParts = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${baseUrl}/api/v1/body-parts`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token && { Authorization: `Bearer ${token}` }),
+                },
+            });
+            if (!response.ok) throw new Error('부위 목록 조회 실패');
+            const data = await response.json();
+            const list = Array.isArray(data) ? data : data.bodyParts || data.body_parts || [];
+            setBodyParts(list);
+        } catch (err) {
+            console.error('body-parts 로드 실패:', err);
+        }
+    };
 
     // "+ 관리 추가" 버튼 핸들러
     const handleAddItem = () => {
         setTreatmentItems((prev) => [
             ...prev,
-            { id: Date.now(), category: '', area: '', count: 1 },
+            { id: Date.now() + Math.random(), careName: '', careType: 'skincare', partOfBody: [], totalSessions: 1 },
         ]);
     };
 
-    // 'x' 버튼 핸들러 (항목 삭제)
+    // 항목 삭제 핸들러
     const handleRemoveItem = (id) => {
         if (treatmentItems.length === 1) {
             alert('최소 1개 이상의 관리 항목이 필요합니다.');
@@ -89,14 +160,40 @@ export default function TreatmentModal({
     const handleItemChange = (id, field, value) => {
         setTreatmentItems((prev) =>
             prev.map((item) => {
-                if (item.id === id) {
-                    const updated = { ...item, [field]: value };
-                    if (field === 'category') {
-                        updated.area = '';
-                    }
-                    return updated;
-                }
-                return item;
+                if (item.id !== id) return item;
+                return { ...item, [field]: value };
+            })
+        );
+    };
+
+    // 카탈로그 선택 시 careType & 추천 bodyParts 자동 매핑
+    const handleCatalogSelect = (id, catalogItem) => {
+        setTreatmentItems((prev) =>
+            prev.map((item) => {
+                if (item.id !== id) return item;
+                return {
+                    ...item,
+                    careName: catalogItem.care_name || catalogItem.careName || '',
+                    careType: catalogItem.care_type || catalogItem.careType || 'skincare',
+                    partOfBody: catalogItem.body_parts || catalogItem.bodyParts || [],
+                };
+            })
+        );
+    };
+
+    // 부위 다중 선택 토글
+    const handleToggleBodyPart = (id, partValue) => {
+        setTreatmentItems((prev) =>
+            prev.map((item) => {
+                if (item.id !== id) return item;
+                const current = item.partOfBody || [];
+                const exists = current.includes(partValue);
+                return {
+                    ...item,
+                    partOfBody: exists
+                        ? current.filter((p) => p !== partValue)
+                        : [...current, partValue],
+                };
             })
         );
     };
@@ -105,61 +202,70 @@ export default function TreatmentModal({
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // 1. 유효성 검사
-        const isInvalid = treatmentItems.some((item) => !item.category || !item.area);
+        // 유효성 검사
+        const isInvalid = treatmentItems.some(
+            (item) => !item.careName.trim() || item.partOfBody.length === 0
+        );
         if (isInvalid) {
             alert('모든 관리 항목의 관리명과 관리 부위를 선택해 주세요.');
             return;
         }
 
-        // 고객 ID 확인 (DB FK 필수값)
-        const customerId = customer.id || customer.customer_id;
-        if (!customerId) {
+        const patientId = customer.id || customer.customer_id || customer.patientId;
+        if (!patientId) {
             alert('고객 정보(ID)를 찾을 수 없습니다.');
             return;
         }
 
         try {
             setIsSubmitting(true);
-            const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+            const token = localStorage.getItem('token');
+            const careDate = date || new Date().toISOString().split('T')[0];
 
-            // 2. 백엔드 DB 표준 규격으로 Payload 구성
-            const payload = {
-                customer_id: customerId,
-                treatment_date: date,
-                treatment_time: `${hour}:${minute}:00`, // HH:mm:ss 포맷
-                memo: memo,
-                items: treatmentItems.map((item) => ({
-                    treatment_name: item.category,
-                    treatment_area: item.area,
-                    count: item.count,
-                })),
-            };
+            // Promise.all로 N개의 care-records 병렬 등록
+            const requests = treatmentItems.map((item) => {
+                const payload = {
+                    careName: item.careName.trim(),
+                    careType: item.careType || 'skincare',
+                    careDate: careDate,
+                    partOfBody: item.partOfBody,
+                    totalSessions: item.totalSessions || 1,
+                    practitioner: '담당 관리자',
+                };
 
-            // 3. 백엔드 API 호출 (POST /api/treatments)
-            const response = await fetch(`${baseUrl}/api/treatments`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    // 'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify(payload),
+                return fetch(`${baseUrl}/api/v1/patients/${patientId}/care-records`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(token && { Authorization: `Bearer ${token}` }),
+                    },
+                    body: JSON.stringify(payload),
+                });
             });
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || `서버 오류 발생: ${response.status}`);
+            const responses = await Promise.all(requests);
+
+            // 에러 체크
+            const errors = [];
+            for (let i = 0; i < responses.length; i++) {
+                if (!responses[i].ok) {
+                    const errorData = await responses[i].json().catch(() => ({}));
+                    errors.push(
+                        errorData.error?.message || errorData.message || `항목 ${i + 1} 등록 실패 (${responses[i].status})`
+                    );
+                }
             }
 
-            const savedData = await response.json();
+            if (errors.length > 0) {
+                throw new Error(errors.join('\n'));
+            }
 
             if (onSubmitTreatment) {
-                onSubmitTreatment(savedData);
+                onSubmitTreatment();
             }
 
             alert('관리가 성공적으로 등록되었습니다.');
 
-            // 부모 컴포넌트 목록/이력 데이터 새로고침
             if (onRefreshData) {
                 await onRefreshData();
             }
@@ -167,18 +273,31 @@ export default function TreatmentModal({
             onClose();
         } catch (error) {
             console.error('관리 등록 실패:', error);
-            alert(`관리 등록 중 오류가 발생했습니다: ${error.message}`);
+            alert(`관리 등록 중 오류가 발생했습니다:\n${error.message}`);
         } finally {
             setIsSubmitting(false);
         }
     };
+
+    const customerName = customer.name || '고객';
+
+    // 시/분 옵션 생성
+    const hourOptions = Array.from({ length: 24 }, (_, i) => {
+        const h = String(i).padStart(2, '0');
+        return { value: h, label: `${h}시` };
+    });
+
+    const minuteOptions = Array.from({ length: 12 }, (_, i) => {
+        const m = String(i * 5).padStart(2, '0');
+        return { value: m, label: `${m}분` };
+    });
 
     return (
         <Modal
             isOpen={isOpen}
             onClose={onClose}
             title="관리 등록"
-            subtitle={`${customer.name || '고객'} 님의 새로운 관리 내역을 등록합니다.`}
+            subtitle={`"${customerName}"의 새로운 관리 내역을 등록합니다.`}
             size="xlarge"
         >
             <form onSubmit={handleSubmit} className="treatment-form">
@@ -199,37 +318,18 @@ export default function TreatmentModal({
                     <div className="form-group">
                         <label className="form-label">관리 시간</label>
                         <div className="time-select-group">
-                            <select
+                            <CustomSelect
                                 value={hour}
-                                onChange={(e) => setHour(e.target.value)}
-                                className="form-input select-input"
+                                options={hourOptions}
+                                onChange={setHour}
                                 disabled={isSubmitting}
-                            >
-                                {Array.from({ length: 24 }, (_, i) => {
-                                    const h = String(i).padStart(2, '0');
-                                    return (
-                                        <option key={h} value={h}>
-                                            {h}시
-                                        </option>
-                                    );
-                                })}
-                            </select>
-
-                            <select
+                            />
+                            <CustomSelect
                                 value={minute}
-                                onChange={(e) => setMinute(e.target.value)}
-                                className="form-input select-input"
+                                options={minuteOptions}
+                                onChange={setMinute}
                                 disabled={isSubmitting}
-                            >
-                                {Array.from({ length: 12 }, (_, i) => {
-                                    const m = String(i * 5).padStart(2, '0');
-                                    return (
-                                        <option key={m} value={m}>
-                                            {m}분
-                                        </option>
-                                    );
-                                })}
-                            </select>
+                            />
                         </div>
                     </div>
                 </div>
@@ -243,93 +343,20 @@ export default function TreatmentModal({
                         </p>
                     </div>
 
-                    <datalist id="treatment-list-options">
-                        {TREATMENT_DATA.map((data) => (
-                            <option key={data.name} value={data.name} />
-                        ))}
-                    </datalist>
-
                     <div className="treatment-list-box">
-                        {treatmentItems.map((item) => {
-                            const selectedCategoryData = TREATMENT_DATA.find(
-                                (data) => data.name === item.category
-                            );
-                            const availableAreas = selectedCategoryData
-                                ? selectedCategoryData.areas
-                                : [];
-
-                            return (
-                                <div key={item.id} className="treatment-item-row">
-                                    {/* 1. 관리 검색 */}
-                                    <div className="form-group flex-2">
-                                        <label className="sub-label">관리 검색</label>
-                                        <input
-                                            type="text"
-                                            list="treatment-list-options"
-                                            value={item.category}
-                                            onChange={(e) =>
-                                                handleItemChange(item.id, 'category', e.target.value)
-                                            }
-                                            placeholder="관리명을 입력하거나 선택하세요"
-                                            className="form-input search-input"
-                                            disabled={isSubmitting}
-                                        />
-                                    </div>
-
-                                    {/* 2. 관리 부위 선택 */}
-                                    <div className="form-group flex-2">
-                                        <label className="sub-label">관리 부위</label>
-                                        <select
-                                            value={item.area}
-                                            onChange={(e) =>
-                                                handleItemChange(item.id, 'area', e.target.value)
-                                            }
-                                            className="form-input select-input"
-                                            disabled={!selectedCategoryData || isSubmitting}
-                                        >
-                                            <option value="">
-                                                {selectedCategoryData ? '부위 선택' : '관리 선택 필요'}
-                                            </option>
-                                            {availableAreas.map((area) => (
-                                                <option key={area} value={area}>
-                                                    {area}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    {/* 3. 관리 횟수 */}
-                                    <div className="form-group flex-1">
-                                        <label className="sub-label">관리 횟수</label>
-                                        <select
-                                            value={item.count}
-                                            onChange={(e) =>
-                                                handleItemChange(item.id, 'count', Number(e.target.value))
-                                            }
-                                            className="form-input select-input"
-                                            disabled={isSubmitting}
-                                        >
-                                            {Array.from({ length: 10 }, (_, i) => i + 1).map((cnt) => (
-                                                <option key={cnt} value={cnt}>
-                                                    {cnt}회권
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    {/* 4. 항목 삭제 버튼 */}
-                                    <button
-                                        type="button"
-                                        className="remove-item-btn"
-                                        onClick={() => handleRemoveItem(item.id)}
-                                        title="관리 삭제"
-                                        disabled={isSubmitting}
-                                    >
-                                        ✕
-                                    </button>
-                                </div>
-                            );
-                        })}
+                        {treatmentItems.map((item) => (
+                            <TreatmentItemRow
+                                key={item.id}
+                                item={item}
+                                catalog={catalog}
+                                bodyParts={bodyParts}
+                                isSubmitting={isSubmitting}
+                                onItemChange={handleItemChange}
+                                onCatalogSelect={handleCatalogSelect}
+                                onToggleBodyPart={handleToggleBodyPart}
+                                onRemove={handleRemoveItem}
+                            />
+                        ))}
 
                         {/* "+ 관리 추가" 버튼 */}
                         <button
@@ -376,5 +403,193 @@ export default function TreatmentModal({
                 </div>
             </form>
         </Modal>
+    );
+}
+
+/* ─────────────────────────────────────────────
+   TreatmentItemRow (개별 관리 항목 행)
+   - 관리명 Combobox (검색 + 드롭다운 + 자유입력)
+   - 관리 부위 Multi-select Dropdown
+   - 관리 횟수 Custom Select
+   - 삭제 버튼
+   ───────────────────────────────────────────── */
+function TreatmentItemRow({
+    item,
+    catalog,
+    bodyParts,
+    isSubmitting,
+    onItemChange,
+    onCatalogSelect,
+    onToggleBodyPart,
+    onRemove,
+}) {
+    const [nameQuery, setNameQuery] = useState(item.careName || '');
+    const [showNameDropdown, setShowNameDropdown] = useState(false);
+    const [showBodyDropdown, setShowBodyDropdown] = useState(false);
+
+    const nameRef = useRef(null);
+    const bodyRef = useRef(null);
+
+    // 외부 클릭 시 드롭다운 닫기
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (nameRef.current && !nameRef.current.contains(e.target)) {
+                setShowNameDropdown(false);
+            }
+            if (bodyRef.current && !bodyRef.current.contains(e.target)) {
+                setShowBodyDropdown(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    // 부모 상태와 로컬 query 동기화
+    useEffect(() => {
+        setNameQuery(item.careName || '');
+    }, [item.careName]);
+
+    // 카탈로그 필터링 (검색어 기반)
+    const filteredCatalog = catalog.filter((c) => {
+        const name = c.care_name || c.careName || '';
+        return name.toLowerCase().includes(nameQuery.toLowerCase());
+    });
+
+    // 관리명 입력 변경 핸들러
+    const handleNameInputChange = (e) => {
+        const value = e.target.value;
+        setNameQuery(value);
+        onItemChange(item.id, 'careName', value);
+        // 카탈로그에 매칭 안 되면 기본 careType
+        const match = catalog.find(
+            (c) => (c.care_name || c.careName || '').toLowerCase() === value.toLowerCase()
+        );
+        if (!match) {
+            onItemChange(item.id, 'careType', 'skincare');
+        }
+        setShowNameDropdown(true);
+    };
+
+    // 카탈로그 항목 선택
+    const handleSelectCatalogItem = (catalogItem) => {
+        onCatalogSelect(item.id, catalogItem);
+        setNameQuery(catalogItem.care_name || catalogItem.careName || '');
+        setShowNameDropdown(false);
+    };
+
+    // 부위 표시 텍스트
+    const bodyPartLabel = () => {
+        if (!item.partOfBody || item.partOfBody.length === 0) return '';
+        if (item.partOfBody.length <= 2) return item.partOfBody.join(', ');
+        return `${item.partOfBody[0]}, ${item.partOfBody[1]} 외 ${item.partOfBody.length - 2}개`;
+    };
+
+    // 횟수 옵션
+    const sessionOptions = Array.from({ length: 10 }, (_, i) => ({
+        value: i + 1,
+        label: `${i + 1}회`,
+    }));
+
+    return (
+        <div className="treatment-item-row">
+            {/* 1. 관리명 Combobox */}
+            <div className="form-group flex-2" ref={nameRef}>
+                <label className="sub-label">관리명</label>
+                <div className="combobox-wrapper">
+                    <input
+                        type="text"
+                        value={nameQuery}
+                        onChange={handleNameInputChange}
+                        onFocus={() => setShowNameDropdown(true)}
+                        placeholder="관리명을 입력하거나 선택하세요"
+                        className="form-input combobox-input"
+                        disabled={isSubmitting}
+                        autoComplete="off"
+                    />
+                    <svg className="combobox-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#333333" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="m6 9 6 6 6-6" />
+                    </svg>
+                    {showNameDropdown && (
+                        <ul className="combobox-dropdown">
+                            {filteredCatalog.length > 0 ? (
+                                filteredCatalog.map((c, idx) => (
+                                    <li
+                                        key={c.id || idx}
+                                        className="combobox-option"
+                                        onMouseDown={() => handleSelectCatalogItem(c)}
+                                    >
+                                        {c.care_name || c.careName}
+                                    </li>
+                                ))
+                            ) : (
+                                <li className="combobox-option combobox-empty">
+                                    {nameQuery ? '검색 결과가 없습니다. 직접 입력해 주세요.' : '관리명을 입력하여 검색하세요.'}
+                                </li>
+                            )}
+                        </ul>
+                    )}
+                </div>
+            </div>
+
+            {/* 2. 관리 부위 Multi-select Dropdown */}
+            <div className="form-group flex-2" ref={bodyRef}>
+                <label className="sub-label">관리 부위</label>
+                <div className="multiselect-wrapper">
+                    <button
+                        type="button"
+                        className={`multiselect-trigger ${showBodyDropdown ? 'open' : ''}`}
+                        onClick={() => setShowBodyDropdown((prev) => !prev)}
+                        disabled={isSubmitting}
+                    >
+                        <span className={`multiselect-text ${item.partOfBody.length === 0 ? 'placeholder' : ''}`}>
+                            {item.partOfBody.length > 0 ? bodyPartLabel() : '부위를 선택하세요'}
+                        </span>
+                        <svg className="multiselect-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#333333" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="m6 9 6 6 6-6" />
+                        </svg>
+                    </button>
+                    {showBodyDropdown && (
+                        <ul className="multiselect-dropdown">
+                            {bodyParts.map((bp, idx) => {
+                                const partValue = typeof bp === 'string' ? bp : (bp.name || bp.label || bp.body_part || '');
+                                const isSelected = (item.partOfBody || []).includes(partValue);
+                                return (
+                                    <li
+                                        key={bp.id || idx}
+                                        className={`multiselect-option ${isSelected ? 'selected' : ''}`}
+                                        onMouseDown={() => onToggleBodyPart(item.id, partValue)}
+                                    >
+                                        <span className="multiselect-check">{isSelected ? '✓' : ''}</span>
+                                        {partValue}
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    )}
+                </div>
+            </div>
+
+            {/* 3. 관리 횟수 Custom Select */}
+            <div className="form-group flex-1">
+                <label className="sub-label">횟수</label>
+                <CustomSelect
+                    value={item.totalSessions}
+                    options={sessionOptions}
+                    onChange={(val) => onItemChange(item.id, 'totalSessions', Number(val))}
+                    disabled={isSubmitting}
+                />
+            </div>
+
+            {/* 4. 항목 삭제 버튼 */}
+            <button
+                type="button"
+                className="remove-item-btn"
+                onClick={() => onRemove(item.id)}
+                title="관리 삭제"
+                disabled={isSubmitting}
+            >
+                ✕
+            </button>
+        </div>
     );
 }

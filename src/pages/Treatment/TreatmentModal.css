@@ -1,7 +1,8 @@
 @import '../../styles/modal.css';
 
-/* 1. 모달 전체 너비 및 패딩 확장 */
-/* 모달 전체 너비 및 패딩을 2번째 이미지 크기(가로 약 1100px)로 확장 */
+/* ============================================
+   1. 모달 전체 너비 및 패딩 확장
+   ============================================ */
 .modal-container.xlarge,
 .modal-container {
     max-width: 1140px !important;
@@ -10,62 +11,30 @@
     border-radius: 24px !important;
 }
 
-/* 2. 모달 내부 요소들 간격 및 글자 크기 조정 */
+/* ============================================
+   2. 폼 레이아웃
+   ============================================ */
 .treatment-form {
     display: flex;
     flex-direction: column;
     gap: 20px;
 }
 
-.treatment-list-box {
-    background-color: #fcfcfc;
-    border: 1px solid #f0f0f0;
-    border-radius: 16px;
-    padding: 24px !important;
-    /* 내부 여백 확장 */
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-/* 3. 각 입력창 및 버튼 높이감 조정 */ 
-.treatment-item-row .form-input,
-.treatment-item-row .remove-item-btn {
-    height: 52px;
-    font-size: 15px;
-}
-
-.add-item-btn {
-    height: 50px;
-    font-size: 15px;
-}
-
-/* 2. 관리 시간 (시, 분) 세부 레이아웃 */
+/* ============================================
+   3. 관리 시간 (시, 분) 세부 레이아웃
+   ============================================ */
 .time-select-group {
     display: flex;
     gap: 8px;
 }
 
-/* 3. 인코딩 안전한 SVG 화살표 처리 */
-.select-input {
-    background-color: #ffffff;
-    cursor: pointer;
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23333333' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 14px center;
-    background-size: 12px;
-    padding-right: 36px;
+.time-select-group .custom-select-wrapper {
+    flex: 1;
 }
 
-/* 4. 검색용 input 스타일 */
-.search-input {
-    background-color: #ffffff;
-}
-
-/* 5. 1:N 카드 목록 컨테이너 */
+/* ============================================
+   4. 1:N 카드 목록 섹션
+   ============================================ */
 .treatment-section {
     display: flex;
     flex-direction: column;
@@ -90,13 +59,15 @@
     background-color: #fcfcfc;
     border: 1px solid #f0f0f0;
     border-radius: 16px;
-    padding: 18px;
+    padding: 24px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
 }
 
-/* 6. 행 내부 정렬 및 삭제 버튼 */
+/* ============================================
+   5. 행 내부 정렬
+   ============================================ */
 .treatment-item-row {
     display: flex;
     align-items: flex-end;
@@ -104,6 +75,7 @@
 }
 
 .sub-label {
+    display: block;
     font-size: 12px;
     font-weight: 700;
     color: #444444;
@@ -118,13 +90,15 @@
     flex: 1;
 }
 
-/* 5. 삭제 'x' 버튼 디자인 */
+/* ============================================
+   6. 삭제 'x' 버튼 디자인
+   ============================================ */
 .remove-item-btn {
-    height: 48px;
-    width: 44px;
+    height: 42px;
+    width: 42px;
     background-color: #ffffff;
-    border: 1px solid #e4e4e7;
-    border-radius: 10px;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
     color: #666666;
     font-size: 14px;
     cursor: pointer;
@@ -141,13 +115,15 @@
     color: #ef4444;
 }
 
-/* 6. '+ 관리 추가' 대시 형태 버튼 */
+/* ============================================
+   7. '+ 관리 추가' 대시 형태 버튼
+   ============================================ */
 .add-item-btn {
     width: 100%;
-    height: 46px;
+    height: 42px;
     background-color: #ffffff;
     border: 1px dashed #d1d5db;
-    border-radius: 10px;
+    border-radius: 8px;
     font-size: 14px;
     font-weight: 800;
     color: #111111;
@@ -159,4 +135,330 @@
 .add-item-btn:hover {
     background-color: #f4f4f5;
     border-color: #111111;
+}
+
+/* ============================================
+   8. Custom Select (단일 선택 - 시/분/횟수)
+   ============================================ */
+.custom-select-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.custom-select-trigger {
+    width: 100%;
+    height: 42px;
+    padding: 0 12px;
+    font-size: 14px;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    background-color: #ffffff;
+    color: #111111;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-align: left;
+    outline: none;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+.custom-select-trigger:focus,
+.custom-select-trigger.open {
+    border-color: #111111;
+}
+
+.custom-select-trigger:disabled {
+    background-color: #f9fafb;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.custom-select-text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.custom-select-text.placeholder {
+    color: #a0a0a0;
+}
+
+.custom-select-arrow {
+    flex-shrink: 0;
+    margin-left: 8px;
+}
+
+.custom-select-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    background-color: #ffffff;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 50;
+    list-style: none;
+    margin: 0;
+    padding: 4px 0;
+}
+
+.custom-select-option {
+    padding: 8px 12px;
+    font-size: 14px;
+    color: #111111;
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.custom-select-option:hover {
+    background-color: #f4f4f5;
+}
+
+.custom-select-option.selected {
+    background-color: #f0f4ff;
+    font-weight: 700;
+}
+
+/* ============================================
+   9. Combobox (관리명 검색 + 드롭다운)
+   ============================================ */
+.combobox-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.combobox-input {
+    width: 100%;
+    height: 42px;
+    padding: 0 36px 0 12px;
+    font-size: 14px;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    background-color: #ffffff;
+    color: #111111;
+    outline: none;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+.combobox-input:focus {
+    border-color: #111111;
+}
+
+.combobox-input::placeholder {
+    color: #a0a0a0;
+}
+
+.combobox-arrow {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+}
+
+.combobox-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    background-color: #ffffff;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 50;
+    list-style: none;
+    margin: 0;
+    padding: 4px 0;
+}
+
+.combobox-option {
+    padding: 8px 12px;
+    font-size: 14px;
+    color: #111111;
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.combobox-option:hover {
+    background-color: #f4f4f5;
+}
+
+.combobox-option.combobox-empty {
+    color: #999999;
+    cursor: default;
+    font-size: 13px;
+}
+
+.combobox-option.combobox-empty:hover {
+    background-color: transparent;
+}
+
+/* ============================================
+   10. Multi-select Dropdown (관리 부위)
+   ============================================ */
+.multiselect-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.multiselect-trigger {
+    width: 100%;
+    height: 42px;
+    padding: 0 12px;
+    font-size: 14px;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    background-color: #ffffff;
+    color: #111111;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-align: left;
+    outline: none;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+.multiselect-trigger:focus,
+.multiselect-trigger.open {
+    border-color: #111111;
+}
+
+.multiselect-trigger:disabled {
+    background-color: #f9fafb;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.multiselect-text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.multiselect-text.placeholder {
+    color: #a0a0a0;
+}
+
+.multiselect-arrow {
+    flex-shrink: 0;
+    margin-left: 8px;
+}
+
+.multiselect-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    max-height: 220px;
+    overflow-y: auto;
+    background-color: #ffffff;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 50;
+    list-style: none;
+    margin: 0;
+    padding: 4px 0;
+}
+
+.multiselect-option {
+    padding: 8px 12px;
+    font-size: 14px;
+    color: #111111;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.15s;
+}
+
+.multiselect-option:hover {
+    background-color: #f4f4f5;
+}
+
+.multiselect-option.selected {
+    background-color: #f0f4ff;
+    font-weight: 700;
+}
+
+.multiselect-check {
+    width: 16px;
+    font-size: 13px;
+    color: #111111;
+    flex-shrink: 0;
+}
+
+/* ============================================
+   11. 입력 높이 통일 (모든 form-input 동일 규격)
+   ============================================ */
+.treatment-item-row .form-input,
+.treatment-item-row .combobox-input,
+.treatment-item-row .multiselect-trigger,
+.treatment-item-row .custom-select-trigger {
+    height: 42px;
+    font-size: 14px;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+}
+
+.treatment-item-row .remove-item-btn {
+    height: 42px;
+}
+
+/* ============================================
+   12. date-input 통일 규격
+   ============================================ */
+.treatment-form .date-input {
+    height: 42px;
+    padding: 0 12px;
+    font-size: 14px;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    background-color: #ffffff;
+    color: #111111;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+}
+
+.treatment-form .date-input:focus {
+    border-color: #111111;
+}
+
+/* ============================================
+   13. textarea 규격
+   ============================================ */
+.treatment-form .form-textarea {
+    width: 100%;
+    padding: 12px;
+    font-size: 14px;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    background-color: #ffffff;
+    color: #111111;
+    outline: none;
+    resize: vertical;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+    font-family: inherit;
+}
+
+.treatment-form .form-textarea:focus {
+    border-color: #111111;
+}
+
+.treatment-form .form-textarea::placeholder {
+    color: #a0a0a0;
 }

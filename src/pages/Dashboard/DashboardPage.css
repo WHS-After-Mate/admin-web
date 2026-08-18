@@ -104,6 +104,13 @@
   margin: 0;
 }
 
+.card-unit {
+  font-size: 16px;
+  font-weight: 600;
+  color: #777777;
+  margin-left: 4px;
+}
+
 /* 4. 최근 고객 섹션 */
 .recent-header {
   display: flex;
