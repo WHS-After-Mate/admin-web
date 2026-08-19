@@ -69,9 +69,6 @@ export default function TreatmentModal({
     // customer가 null/undefined일 때 빈 객체로 안전하게 폴백
     const safeCustomer = customer || {};
 
-    // [DEBUG] 모달이 받은 Props 로그 출력
-    console.log('[DEBUG] TreatmentModal received Props:', { isOpen, customer: safeCustomer, onSubmitTreatment: !!onSubmitTreatment, onRefreshData: !!onRefreshData });
-
     const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4100';
 
     // 오늘 날짜 및 기본 시간
@@ -87,6 +84,7 @@ export default function TreatmentModal({
 
     // 카탈로그 & 부위 API 데이터
     const [catalog, setCatalog] = useState([]);
+    const [isCatalogLoading, setIsCatalogLoading] = useState(false);
     const [bodyParts, setBodyParts] = useState([]);
 
     // 동적 관리 항목 배열
@@ -111,6 +109,7 @@ export default function TreatmentModal({
 
     const fetchCatalog = async () => {
         try {
+            setIsCatalogLoading(true);
             const token = localStorage.getItem('token');
             const response = await fetch(`${baseUrl}/api/v1/treatment-catalog`, {
                 headers: {
@@ -120,8 +119,6 @@ export default function TreatmentModal({
             });
             if (!response.ok) throw new Error(`카탈로그 조회 실패: ${response.status}`);
             const data = await response.json();
-            console.log('Catalog Response:', data);
-
             // 응답 구조 추출 — 가능한 모든 래핑 형태 대응
             let list;
             if (Array.isArray(data)) {
@@ -146,6 +143,8 @@ export default function TreatmentModal({
         } catch (err) {
             console.error('treatment-catalog 로드 실패:', err);
             setCatalog([]);
+        } finally {
+            setIsCatalogLoading(false);
         }
     };
 
@@ -240,9 +239,6 @@ export default function TreatmentModal({
         }
 
         const patientId = safeCustomer.id || safeCustomer.customer_id || safeCustomer.patientId || safeCustomer.patient_id;
-        console.log('[DEBUG] handleSubmit - customer object:', safeCustomer);
-        console.log('[DEBUG] handleSubmit - extracted patientId:', patientId);
-        console.log('[DEBUG] handleSubmit - customer keys:', Object.keys(safeCustomer));
         if (!patientId) {
             alert('고객 정보(ID)를 찾을 수 없습니다.');
             return;
@@ -251,6 +247,8 @@ export default function TreatmentModal({
         try {
             setIsSubmitting(true);
             const token = localStorage.getItem('token');
+
+            // careDate: 백엔드 규격 "YYYY-MM-DD" (10자리, 시간 제외)
             const careDate = date || new Date().toISOString().split('T')[0];
 
             // Promise.all로 N개의 care-records 병렬 등록
@@ -259,10 +257,18 @@ export default function TreatmentModal({
                     careName: item.careName.trim(),
                     careType: item.careType || 'skincare',
                     careDate: careDate,
-                    partOfBody: item.partOfBody,
-                    totalSessions: item.totalSessions || 1,
-                    practitioner: '담당 관리자',
+                    partOfBody: item.partOfBody || [],
+                    ...(memo.trim() && { memo: memo.trim() }),
                 };
+
+                // membershipId와 totalSessions는 상호 배타적 — 정확히 하나만 전송
+                if (item.membershipId) {
+                    payload.membershipId = item.membershipId;
+                } else {
+                    payload.totalSessions = item.totalSessions || 1;
+                }
+
+                console.log('[DEBUG] Final Care Record Payload:', payload);
 
                 return fetch(`${baseUrl}/api/v1/patients/${patientId}/care-records`, {
                     method: 'POST',
@@ -380,6 +386,7 @@ export default function TreatmentModal({
                                 key={item.id}
                                 item={item}
                                 catalog={catalog}
+                                isCatalogLoading={isCatalogLoading}
                                 bodyParts={bodyParts}
                                 isSubmitting={isSubmitting}
                                 onItemChange={handleItemChange}
@@ -447,6 +454,7 @@ export default function TreatmentModal({
 function TreatmentItemRow({
     item,
     catalog,
+    isCatalogLoading,
     bodyParts,
     isSubmitting,
     onItemChange,
@@ -568,7 +576,11 @@ function TreatmentItemRow({
                     </button>
                     {showNameDropdown && (
                         <ul className="combobox-dropdown">
-                            {filteredCatalog.length > 0 ? (
+                            {isCatalogLoading ? (
+                                <li className="combobox-option combobox-empty">
+                                    관리 항목을 불러오는 중...
+                                </li>
+                            ) : filteredCatalog.length > 0 ? (
                                 filteredCatalog.map((c, idx) => (
                                     <li
                                         key={c.id || idx}

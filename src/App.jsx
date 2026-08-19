@@ -35,25 +35,18 @@ function AdminLayout({
   isDetailModalOpen,       // 고객 상세 모달 열림 상태 (boolean)
   setIsDetailModalOpen,    // 고객 상세 모달 상태 변경 함수
   selectedCustomer,       // 모달에 전달할 선택된 고객 정보 데이터
-<<<<<<< HEAD
-=======
   setSelectedCustomer,    // 선택된 고객 정보 상태 변경 함수
   treatmentCustomer,      // 관리 등록 모달에 전달할 고객 데이터
   setTreatmentCustomer,   // 관리 등록 모달 고객 상태 변경 함수
   onRefreshData,          // 데이터 리프레시 콜백
->>>>>>> feature/login
 }) {
   return (
     <div className="dashboard-layout">
       {/* 화면 좌측 공통 사이드바 (진료 등록 모달을 열 수 있는 이벤트 전달) */}
-<<<<<<< HEAD
-      <Sidebar onOpenTreatmentModal={() => setIsModalOpen(true)} />
-=======
       <Sidebar onOpenTreatmentModal={() => {
         setTreatmentCustomer(null); // 특정 고객 없이 열기
         setIsModalOpen(true);
       }} />
->>>>>>> feature/login
 
       {/* 중앙 메인 콘텐츠 영역 (Route에서 전달받은 children 페이지가 표시됨) */}
       <main className="dashboard-main">
@@ -62,27 +55,6 @@ function AdminLayout({
 
       {/* --- 공통 팝업/모달 영역 --- */}
 
-<<<<<<< HEAD
-      {/* 1) 진료 / 관리 등록 모달 */}
-      <TreatmentModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
-
-      {/* 2) 신규 고객 등록 모달 */}
-      <CustomerModal
-        isOpen={isCustomerModalOpen}
-        onClose={() => setIsCustomerModalOpen(false)}
-      />
-
-      {/* 3) 고객 상세 정보 모달 */}
-      <CustomerDetailModal
-        isOpen={isDetailModalOpen}
-        onClose={() => setIsDetailModalOpen(false)}
-        customerData={selectedCustomer} 
-        onOpenTreatmentModal={() => setIsModalOpen(true)}
-      />
-=======
       {/* 1) 진료/관리 등록 모달 */}
       {isModalOpen && (
         <TreatmentModal
@@ -118,7 +90,6 @@ function AdminLayout({
           onRefreshData={onRefreshData}
         />
       )}
->>>>>>> feature/login
     </div>
   );
 }
@@ -136,8 +107,6 @@ function AppContent() {
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false); // 신규 고객 모달 열림/닫힘
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);     // 고객 상세 모달 열림/닫힘
   const [selectedCustomer, setSelectedCustomer] = useState(null);       // 모달에 띄울 선택된 고객 데이터
-<<<<<<< HEAD
-=======
   const [treatmentCustomer, setTreatmentCustomer] = useState(null);     // 관리 등록 모달에 전달할 고객 데이터
   const [refreshTrigger, setRefreshTrigger] = useState(0);              // 데이터 리프레시 트리거
 
@@ -147,7 +116,6 @@ function AppContent() {
   const handleRefreshData = () => {
     setRefreshTrigger((prev) => prev + 1);
   };
->>>>>>> feature/login
 
   /**
    * 핸들러 함수: 특정 고객을 클릭했을 때 선택된 고객 정보를 저장하고 상세 모달을 켭니다.
@@ -158,8 +126,6 @@ function AppContent() {
   };
 
   /**
-<<<<<<< HEAD
-=======
    * 핸들러 함수: 관리 등록 모달을 특정 고객과 함께 엽니다.
    */
   const handleOpenTreatmentModal = (customer) => {
@@ -168,7 +134,6 @@ function AppContent() {
   };
 
   /**
->>>>>>> feature/login
    * layoutProps 묶음
    */
   const layoutProps = {
@@ -179,13 +144,10 @@ function AppContent() {
     isDetailModalOpen,
     setIsDetailModalOpen,
     selectedCustomer,
-<<<<<<< HEAD
-=======
     setSelectedCustomer,
     treatmentCustomer,
     setTreatmentCustomer,
     onRefreshData: handleRefreshData,
->>>>>>> feature/login
   };
 
   return (
@@ -205,6 +167,7 @@ function AppContent() {
               onOpenCustomerModal={() => setIsCustomerModalOpen(true)}
               onOpenDetailModal={handleOpenDetailModal}
               onNavigateToCustomer={() => navigate('/customer')}
+              refreshTrigger={refreshTrigger}
             />
           </AdminLayout>
         }
@@ -216,13 +179,10 @@ function AppContent() {
         element={
           <AdminLayout {...layoutProps}>
             <CustomerPage
-<<<<<<< HEAD
-              onOpenModal={() => setIsModalOpen(true)}
-=======
               onOpenModal={handleOpenTreatmentModal}
->>>>>>> feature/login
               onOpenCustomerModal={() => setIsCustomerModalOpen(true)}
               onOpenDetailModal={handleOpenDetailModal}
+              refreshTrigger={refreshTrigger}
             />
           </AdminLayout>
         }

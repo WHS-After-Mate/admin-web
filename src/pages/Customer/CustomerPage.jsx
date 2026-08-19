@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getPractitionerColor } from '../../components/common/CustomerCard';
+import { getCurrentBrandColor } from '../../utils/getBrandColor';
 import './CustomerPage.css';
 
 /**
@@ -27,6 +27,7 @@ export default function CustomerPage({
   onOpenModal,        // 관리 등록 모달 열기 함수
   onOpenCustomerModal, // 신규 고객 등록 모달 열기 함수
   onOpenDetailModal,  // 고객 상세 모달 열기 함수
+  refreshTrigger,     // 외부 데이터 갱신 트리거 (App 레벨)
 }) {
   const navigate = useNavigate();
 
@@ -98,9 +99,10 @@ export default function CustomerPage({
   }, [baseUrl]);
 
   // 마운트 시 데이터 로드
+  // 마운트 시 및 외부 refreshTrigger 변경 시 데이터 로드
   useEffect(() => {
-    fetchCustomers();
-  }, [fetchCustomers]);
+    fetchCustomers(searchTerm);
+  }, [fetchCustomers, refreshTrigger]);
 
   // Re-fetch 콜백 (TreatmentModal/CustomerDetailModal에서 호출용)
   const handleRefreshData = useCallback(() => {
@@ -171,11 +173,6 @@ export default function CustomerPage({
   
   return (
     <div className="customer-container">
-      {/* 상단 빵부스러기 (Breadcrumb) 영역 */}
-      <div className="top-header">
-        <span className="breadcrumb">고객 관리</span>
-      </div>
-
       {/* 페이지 헤더 & 등록 버튼 */}
       <div className="page-header">
         <div>
@@ -239,7 +236,7 @@ export default function CustomerPage({
                   <span className={`clinic-badge${customer.historyCount > 0 ? ' clinic-badge--active' : ''}`}>
                     <span
                       className="dot"
-                      style={{ backgroundColor: getPractitionerColor(customer.practitioner || customer.doctor || customer.doctorName || customer.doctor_name || null) }}
+                      style={{ backgroundColor: getCurrentBrandColor() }}
                     ></span>
                     {customer.historyCount > 0 ? `${customer.historyCount}건의 관리` : '관리 이력 없음'}
                   </span>

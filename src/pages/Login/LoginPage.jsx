@@ -2,16 +2,6 @@ import React, { useState } from 'react';
 import logoWhite from '../../assets/logo_white.png';
 import { useNavigate } from 'react-router-dom';
 import './LoginPage.css';
-<<<<<<< HEAD
-// 1. 아이콘 라이브러리 import
-import { Eye, EyeOff } from 'lucide-react';
-
-export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [passwordError, setPasswordError] = useState('');
-  // 2. 비밀번호 보이기/숨기기 상태 추가 (기본값: false)
-=======
 import { Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
@@ -25,27 +15,10 @@ export default function LoginPage() {
 
   // 로그인 요청 상태
   const [isSubmitting, setIsSubmitting] = useState(false);
->>>>>>> feature/login
   const [showPassword, setShowPassword] = useState(false);
 
   const navigate = useNavigate();
 
-<<<<<<< HEAD
-  const handleLogin = (e) => {
-    e.preventDefault();
-
-    // 비밀번호가 비어있는 경우
-    if (!password) {
-      setPasswordError('비밀번호를 입력하시오');
-      return;
-    } else {
-      setPasswordError('');
-    }
-
-    // 로그인 성공 로직
-    localStorage.setItem('isLoggedIn', 'true');
-    navigate('/dashboard');
-=======
   const handleLogin = async (e) => {
     e.preventDefault();
 
@@ -115,16 +88,11 @@ export default function LoginPage() {
     } finally {
       setIsSubmitting(false);
     }
->>>>>>> feature/login
   };
 
   return (
     <div className="login-container">
-<<<<<<< HEAD
-      {/* 왼쪽 검은색 영역 (원본 디자인 100% 동일) */}
-=======
       {/* 왼쪽 브랜딩 영역 */}
->>>>>>> feature/login
       <div className="login-left">
         <div className="brand-logo">
           <img src={logoWhite} alt="WHS AFTER MATE 로고" />
@@ -144,29 +112,6 @@ export default function LoginPage() {
         <div className="brand-footer">CLINIC ADMIN DEMO</div>
       </div>
 
-<<<<<<< HEAD
-      {/* 오른쪽 흰색 로그인 폼 영역 */}
-      <div className="login-right">
-        <div className="login-form-wrapper">
-          <h2 className="login-title">관리자 로그인</h2>
-          <p className="login-subtitle">앰레드 클리닉 데모 계정으로 시작합니다.</p>
-
-          <form onSubmit={handleLogin} className="login-form" noValidate>
-            <div className="input-group">
-              <label htmlFor="email">이메일</label>
-              <input
-                id="email"
-                type="email"
-                placeholder="admin@amredclinic.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-
-            <div className="input-group">
-              <label htmlFor="password">비밀번호</label>
-              {/* 3. 비밀번호 input 영역을 wrapper로 감싸고 토글 버튼 추가 */}
-=======
       {/* 오른쪽 로그인 폼 영역 */}
       <div className="login-right">
         <div className="login-form-wrapper">
@@ -194,7 +139,6 @@ export default function LoginPage() {
             {/* 비밀번호 입력 그룹 */}
             <div className="input-group">
               <label htmlFor="password">비밀번호</label>
->>>>>>> feature/login
               <div className="password-input-wrapper">
                 <input
                   id="password"
@@ -203,26 +147,15 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
-<<<<<<< HEAD
-                    if (e.target.value) {
-                      setPasswordError('');
-                    }
-                  }}
-=======
                     if (passwordError) setPasswordError('');
                   }}
                   disabled={isSubmitting}
->>>>>>> feature/login
                 />
                 <button
                   type="button"
                   className="password-toggle-btn"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label="비밀번호 토글"
-<<<<<<< HEAD
-                >
-                  {showPassword ? <EyeOff size={20} color="#0A0A0B" /> : <Eye size={20} color="#0A0A0B" />}
-=======
                   disabled={isSubmitting}
                 >
                   {showPassword ? (
@@ -230,20 +163,14 @@ export default function LoginPage() {
                   ) : (
                     <Eye size={20} color="#0A0A0B" />
                   )}
->>>>>>> feature/login
                 </button>
               </div>
               {passwordError && <span className="error-message">{passwordError}</span>}
             </div>
 
-<<<<<<< HEAD
-            <button type="submit" className="login-btn">
-              로그인
-=======
             {/* 로그인 제출 버튼 */}
             <button type="submit" className="login-btn" disabled={isSubmitting}>
               {isSubmitting ? '로그인 중...' : '로그인'}
->>>>>>> feature/login
             </button>
           </form>
         </div>

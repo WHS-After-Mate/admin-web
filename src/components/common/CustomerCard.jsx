@@ -1,4 +1,5 @@
 import React from 'react';
+import { getCurrentBrandColor } from '../../utils/getBrandColor';
 import './CustomerCard.css';
 
 /**
@@ -116,8 +117,7 @@ export default function CustomerCard({ customer, onOpenDetailModal, onRefreshDat
 
     const historyCount = getCareCount(customer);
     const { careName, careDate } = getLatestCare(customer);
-    const practitioner = getPractitioner(customer);
-    const dotColor = getPractitionerColor(practitioner);
+    const brandColor = getCurrentBrandColor();
 
     const handleDetailClick = () => {
         if (onOpenDetailModal) {
@@ -136,10 +136,13 @@ export default function CustomerCard({ customer, onOpenDetailModal, onRefreshDat
 
             {/* 관리 이력 배지 */}
             <div className="cc-badge-area">
-                <span className={`cc-badge ${historyCount > 0 ? 'cc-badge--active' : ''}`}>
+                <span
+                    className={`cc-badge ${historyCount > 0 ? 'cc-badge--active' : ''}`}
+                    style={historyCount > 0 ? { backgroundColor: `${brandColor}22` } : undefined}
+                >
                     <span
                         className="cc-badge-dot"
-                        style={{ backgroundColor: dotColor }}
+                        style={{ backgroundColor: brandColor }}
                     ></span>
                     {historyCount > 0 ? `${historyCount}건의 관리` : '관리 이력 없음'}
                 </span>

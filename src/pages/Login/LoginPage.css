@@ -27,14 +27,9 @@
   font-weight: 900;
   letter-spacing: -0.5px;
 }
-<<<<<<< HEAD
-.brand-logo img {
-  max-width: 150px; /* 원하는 로고 크기에 맞춰 조절하세요 */
-=======
 
 .brand-logo img {
   max-width: 150px;
->>>>>>> feature/login
   height: auto;
   object-fit: contain;
 }
@@ -179,14 +174,6 @@
   background-color: #333333;
 }
 
-<<<<<<< HEAD
-/* 비밀번호 에러 메시지 스타일 */
-.error-message {
-  color: #e53e3e;       /* 선명한 빨간색 */
-  font-size: 13px;       /* 적절한 크기로 축소 */
-  font-weight: 500;
-  margin-top: 2px;
-=======
 .login-btn:disabled {
   background-color: #999999;
   cursor: not-allowed;
@@ -198,7 +185,6 @@
   font-size: 12px;
   font-weight: 500;
   margin-top: 4px;
->>>>>>> feature/login
   display: block;
   text-align: left;
 }

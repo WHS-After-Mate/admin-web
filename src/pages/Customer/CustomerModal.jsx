@@ -1,32 +1,14 @@
-<<<<<<< HEAD
-import React, { useState } from 'react';
-import Modal from '../../components/common/Modal';
-import './CustomerModal.css';
-
-export default function CustomerModal({ isOpen, onClose, onAddCustomer }) {
-=======
 import React, { useState, useEffect } from 'react';
 import Modal from '../../components/common/Modal';
 import './CustomerModal.css';
 
 export default function CustomerModal({ isOpen, onClose, onAddCustomer, onRefreshData }) {
->>>>>>> feature/login
     const [formData, setFormData] = useState({
         name: '',
         phone: '',
         birthdate: '',
         memo: '',
     });
-<<<<<<< HEAD
-
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
-    };
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-=======
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // 모달이 열리거나 닫힐 때 상태 리셋
@@ -72,21 +54,11 @@ export default function CustomerModal({ isOpen, onClose, onAddCustomer, onRefres
         // 중복 제출 방지
         if (isSubmitting) return;
 
->>>>>>> feature/login
         if (!formData.name.trim()) {
             alert('이름을 입력해 주세요.');
             return;
         }
 
-<<<<<<< HEAD
-        if (onAddCustomer) {
-            onAddCustomer(formData);
-        }
-
-        alert('신규 고객이 등록되었습니다.');
-        setFormData({ name: '', phone: '', birthdate: '', memo: '' });
-        onClose();
-=======
         if (!formData.phone.trim()) {
             alert('전화번호를 입력해 주세요.');
             return;
@@ -146,7 +118,6 @@ export default function CustomerModal({ isOpen, onClose, onAddCustomer, onRefres
             // 성공/실패 여부와 관계없이 제출 상태 해제
             setIsSubmitting(false);
         }
->>>>>>> feature/login
     };
 
     return (
@@ -158,11 +129,7 @@ export default function CustomerModal({ isOpen, onClose, onAddCustomer, onRefres
         >
             <form onSubmit={handleSubmit}>
                 <div className="form-group">
-<<<<<<< HEAD
-                    <label className="form-label">이름</label>
-=======
                     <label className="form-label">이름 *</label>
->>>>>>> feature/login
                     <input
                         type="text"
                         name="name"
@@ -171,53 +138,35 @@ export default function CustomerModal({ isOpen, onClose, onAddCustomer, onRefres
                         onChange={handleChange}
                         className="form-input"
                         required
-<<<<<<< HEAD
-=======
                         disabled={isSubmitting}
->>>>>>> feature/login
                     />
                 </div>
 
                 <div className="form-group">
-<<<<<<< HEAD
-                    <label className="form-label">전화번호</label>
-=======
                     <label className="form-label">전화번호 *</label>
->>>>>>> feature/login
                     <input
                         type="tel"
                         name="phone"
                         placeholder="010-0000-0000"
                         value={formData.phone}
                         onChange={handleChange}
-<<<<<<< HEAD
-                        className="form-input"
-=======
                         maxLength={13} // 010-1234-5678 (최대 13자)
                         className="form-input"
                         required
                         disabled={isSubmitting}
->>>>>>> feature/login
                     />
                 </div>
 
                 <div className="form-group">
-<<<<<<< HEAD
-                    <label className="form-label">생일</label>
-=======
                     <label className="form-label">생일 *</label>
->>>>>>> feature/login
                     <input
                         type="date"
                         name="birthdate"
                         value={formData.birthdate}
                         onChange={handleChange}
                         className="form-input date-input"
-<<<<<<< HEAD
-=======
                         required
                         disabled={isSubmitting}
->>>>>>> feature/login
                     />
                 </div>
 
@@ -230,21 +179,11 @@ export default function CustomerModal({ isOpen, onClose, onAddCustomer, onRefres
                         value={formData.memo}
                         onChange={handleChange}
                         className="form-textarea"
-<<<<<<< HEAD
-=======
                         disabled={isSubmitting}
->>>>>>> feature/login
                     />
                 </div>
 
                 <div className="modal-footer">
-<<<<<<< HEAD
-                    <button type="button" className="btn-cancel" onClick={onClose}>
-                        취소
-                    </button>
-                    <button type="submit" className="btn-submit">
-                        등록하기
-=======
                     <button
                         type="button"
                         className="btn-cancel"
@@ -259,7 +198,6 @@ export default function CustomerModal({ isOpen, onClose, onAddCustomer, onRefres
                         disabled={isSubmitting}
                     >
                         {isSubmitting ? '등록 중...' : '등록하기'}
->>>>>>> feature/login
                     </button>
                 </div>
             </form>

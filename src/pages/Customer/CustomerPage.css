@@ -8,25 +8,6 @@
 }
 
 /* 최상단 서브 헤더 */
-.top-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-}
-
-.breadcrumb {
-  font-size: 14px;
-  font-weight: 700;
-  color: #111111;
-}
-
-.admin-status {
-  font-size: 14px;
-  font-weight: 600;
-  color: #333333;
-}
-
 /* 메인 타이틀 & 헤더 */
 .page-header {
   display: flex;

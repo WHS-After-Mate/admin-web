@@ -1,24 +1,13 @@
-<<<<<<< HEAD
-import React from 'react';
-import './DashboardPage.css';
-
-import { initialDashboardData } from '../../api/mockData';
-
-=======
 import React, { useState, useEffect, useCallback } from 'react';
 import CustomerCard from '../../components/common/CustomerCard';
 import './DashboardPage.css';
 
->>>>>>> feature/login
 export default function DashboardPage({
   onOpenCustomerModal,  // 신규 고객 등록 모달 열기
   onOpenDetailModal,    // 고객 상세 모달 열기
   onNavigateToCustomer, // 고객 관리 전체 페이지 이동
+  refreshTrigger,       // 외부 데이터 갱신 트리거 (App 레벨)
 }) {
-<<<<<<< HEAD
-  const dashboardData = initialDashboardData || {};
-  const recentCustomers = dashboardData.recentCustomers || [];
-=======
   const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4100';
 
   // 통계 카드 상태
@@ -73,13 +62,13 @@ export default function DashboardPage({
         return dateB - dateA;
       });
 
-      setRecentCustomers(sorted.slice(0, 2));
+      setRecentCustomers(sorted.slice(0, 5));
     } catch (err) {
       console.error('최근 고객 조회 실패:', err);
     }
   }, [baseUrl]);
 
-  // API 데이터 페칭
+  // API 데이터 페칭 (마운트 시 및 외부 refreshTrigger 변경 시)
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
@@ -88,25 +77,16 @@ export default function DashboardPage({
     };
 
     loadData();
-  }, [fetchVisitStats, fetchRecentPatients]);
+  }, [fetchVisitStats, fetchRecentPatients, refreshTrigger]);
 
   // Re-fetch 콜백 (TreatmentModal/CustomerDetailModal에서 호출용)
   const handleRefreshData = useCallback(async () => {
     await Promise.all([fetchVisitStats(), fetchRecentPatients()]);
   }, [fetchVisitStats, fetchRecentPatients]);
->>>>>>> feature/login
 
   return (
     <div className="dashboard-content">
-      {/* 1. 최상단 영역: Breadcrumb 및 관리자 상태 */}
-      <div className="dashboard-top-bar">
-        <span className="breadcrumb">대시보드</span>
-        <div className="user-status">
-          관리자 <span className="status-dot"></span>
-        </div>
-      </div>
-
-      {/* 2. 메인 헤더 영역: 신규 고객 등록 버튼으로 문구 변경 */}
+      {/* 메인 헤더 영역: 신규 고객 등록 버튼으로 문구 변경 */}
       <div className="dashboard-header">
         <div>
           <h1 className="main-title">오늘의 운영 현황</h1>
@@ -119,29 +99,13 @@ export default function DashboardPage({
           className="add-btn"
           onClick={onOpenCustomerModal}
         >
-<<<<<<< HEAD
-          + 신규 고객 등록  {/* 👈 문구 수정 완료 */}
-=======
           + 신규 고객 등록 
->>>>>>> feature/login
         </button>
       </div>
 
       {/* 3. 통계 요약 카드 3개 영역 (전날/금일/익일) */}
       <div className="stats-grid">
         <div className="stat-card">
-<<<<<<< HEAD
-          <span className="card-label">전날 방문 고객</span>
-          <h2 className="card-value">{dashboardData.yesterdayCount ?? 12}</h2>
-        </div>
-        <div className="stat-card">
-          <span className="card-label">금일 방문 고객</span>
-          <h2 className="card-value">{dashboardData.todayCount ?? 7}</h2>
-        </div>
-        <div className="stat-card">
-          <span className="card-label">익일 예약 고객</span>
-          <h2 className="card-value">{dashboardData.tomorrowCount ?? 8}</h2>
-=======
           <span className="card-label">전날 신규 고객 수</span>
           <h2 className="card-value">{visitStats.yesterdayCount}<span className="card-unit">명</span></h2>
         </div>
@@ -152,7 +116,6 @@ export default function DashboardPage({
         <div className="stat-card">
           <span className="card-label">익일 예약자 수</span>
           <h2 className="card-value">{visitStats.tomorrowCount}<span className="card-unit">명</span></h2>
->>>>>>> feature/login
         </div>
       </div>
 
@@ -170,44 +133,6 @@ export default function DashboardPage({
         </div>
 
         <div className="customer-card-list">
-<<<<<<< HEAD
-          {recentCustomers.length > 0 ? (
-            recentCustomers.map((customer) => (
-              <div key={customer.id} className="customer-row-card">
-                <div className="cust-personal">
-                  <h3 className="cust-name">{customer.name}</h3>
-                  <p className="cust-phone">{customer.phone}</p>
-                  <p className="cust-email">{customer.email}</p>
-                </div>
-
-                <div className="cust-badge-area">
-                  <span className="clinic-badge">
-                    <span className="badge-dot"></span>
-                    {customer.clinic || 'AMRED CLINIC'}
-                  </span>
-                </div>
-
-                <div className="cust-treatment">
-                  <span className="treatment-label">최근 관리</span>
-                  <strong className="treatment-name">
-                    {customer.lastTreatment || '울쎄라 리프팅'}
-                  </strong>
-                  <span className="treatment-date">
-                    {customer.lastDate || '2026-08-02'}
-                  </span>
-                </div>
-
-                <div className="cust-action">
-                  <button
-                    type="button"
-                    className="detail-btn"
-                    onClick={() => onOpenDetailModal && onOpenDetailModal(customer)}
-                  >
-                    상세 보기 →
-                  </button>
-                </div>
-              </div>
-=======
           {isLoading ? (
             <div className="empty-card">데이터를 불러오는 중입니다...</div>
           ) : recentCustomers.length > 0 ? (
@@ -218,7 +143,6 @@ export default function DashboardPage({
                 onOpenDetailModal={onOpenDetailModal}
                 onRefreshData={handleRefreshData}
               />
->>>>>>> feature/login
             ))
           ) : (
             <div className="empty-card">최근 등록된 고객이 없습니다.</div>
@@ -227,8 +151,4 @@ export default function DashboardPage({
       </div>
     </div>
   );
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> feature/login

@@ -1,14 +1,7 @@
 // src/components/Sidebar.jsx
-<<<<<<< HEAD
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import './Sidebar.css';
-
-export default function Sidebar({ onOpenTreatmentModal }) {
-  const location = useLocation();
-=======
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { getCurrentBrandColor } from '../utils/getBrandColor';
 import './Sidebar.css';
 
 export default function Sidebar() {
@@ -64,7 +57,6 @@ export default function Sidebar() {
       navigate('/login');
     }
   };
->>>>>>> feature/login
 
   return (
     <aside className="sidebar">
@@ -76,26 +68,18 @@ export default function Sidebar() {
         <div>
           <ul className="nav-menu">
             <li>
-<<<<<<< HEAD
-              <Link to="/dashboard" className={`nav-item ${location.pathname === '/dashboard' ? 'active' : ''}`}>
-=======
               <Link
                 to="/dashboard"
                 className={`nav-item ${location.pathname === '/dashboard' ? 'active' : ''}`}
               >
->>>>>>> feature/login
                 • 대시보드
               </Link>
             </li>
             <li>
-<<<<<<< HEAD
-              <Link to="/customer" className={`nav-item ${location.pathname === '/customer' ? 'active' : ''}`}>
-=======
               <Link
                 to="/customer"
                 className={`nav-item ${location.pathname === '/customer' ? 'active' : ''}`}
               >
->>>>>>> feature/login
                 • 고객 관리
               </Link>
             </li>
@@ -103,19 +87,11 @@ export default function Sidebar() {
         </div>
       </div>
 
-<<<<<<< HEAD
-      <div className="user-profile">
-        <div className="user-name">
-          <span className="status-dot"></span>
-          엠레드 클리닉
-        </div>
-        <div className="user-role">관리자 계정</div>
-=======
       {/* 동적 사용자 프로필 영역 */}
       <div className="user-profile">
         <div className="user-info-wrap">
           <div className="user-name">
-            <span className="status-dot"></span>
+            <span className="status-dot" style={{ backgroundColor: getCurrentBrandColor() }}></span>
             {userInfo.clinicName}
           </div>
           <div className="user-role">
@@ -142,7 +118,6 @@ export default function Sidebar() {
         >
           로그아웃
         </button>
->>>>>>> feature/login
       </div>
     </aside>
   );
