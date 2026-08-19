@@ -148,23 +148,14 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-<<<<<<< HEAD
-  background-color: #f1eeff;
-  color: #4b3bb3;
-=======
   background-color: #f2f4f8;
   color: #888888;
->>>>>>> feature/login
   padding: 6px 14px;
   border-radius: 20px;
   font-size: 12px;
   font-weight: 700;
 }
 
-<<<<<<< HEAD
-.clinic-badge .dot {
-  color: #7c62ff;
-=======
 .clinic-badge--active {
   background-color: #eef2ff;
   color: #4b3bb3;
@@ -177,7 +168,6 @@
   border-radius: 50%;
   background-color: #8da4f7;
   flex-shrink: 0;
->>>>>>> feature/login
 }
 
 /* 최근 관리 스타일 */
@@ -247,11 +237,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
-<<<<<<< HEAD
-  /* ✨ 텍스트 줄바꿈 방지! */
-=======
   /* 텍스트 줄바꿈 방지! */
->>>>>>> feature/login
 }
 
 .manage-btn:hover {
