@@ -1,0 +1,113 @@
+/* ============================================
+   공통 고객 카드 컴포넌트 (CustomerCard)
+   ============================================ */
+
+.customer-card-common {
+    background-color: #ffffff;
+    border-radius: 20px;
+    padding: 24px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+}
+
+/* 고객 기본 정보 */
+.cc-personal {
+    width: 220px;
+    flex-shrink: 0;
+}
+
+.cc-name {
+    font-size: 18px;
+    font-weight: 900;
+    color: #111111;
+    margin: 0 0 6px 0;
+}
+
+.cc-phone,
+.cc-patient-no {
+    font-size: 13px;
+    color: #888888;
+    margin: 0 0 2px 0;
+}
+
+/* 관리 이력 배지 */
+.cc-badge-area {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.cc-badge {
+    background-color: #f2f4f8;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 800;
+    color: #888888;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.cc-badge--active {
+    background-color: #eef2ff;
+    color: #111111;
+}
+
+.cc-badge-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #8da4f7;
+    flex-shrink: 0;
+}
+
+/* 최근 관리 정보 */
+.cc-treatment {
+    display: flex;
+    flex-direction: column;
+    width: 180px;
+    flex-shrink: 0;
+}
+
+.cc-treatment-label {
+    font-size: 12px;
+    color: #888888;
+    margin-bottom: 4px;
+}
+
+.cc-treatment-name {
+    font-size: 15px;
+    font-weight: 800;
+    color: #111111;
+    margin-bottom: 2px;
+}
+
+.cc-treatment-date {
+    font-size: 12px;
+    color: #a0a0a0;
+}
+
+/* 상세 보기 버튼 */
+.cc-action {
+    flex-shrink: 0;
+}
+
+.cc-detail-btn {
+    background-color: #f7f7f7;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #111111;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.cc-detail-btn:hover {
+    background-color: #eeeeee;
+}

@@ -25,5 +25,10 @@ dist-ssr
 #보안 캐시 제외
 .env
 src/.env
+<<<<<<< HEAD
+=======
+*.env
+.env.*
+>>>>>>> feature/login
 __pycache__/
 *.pyc

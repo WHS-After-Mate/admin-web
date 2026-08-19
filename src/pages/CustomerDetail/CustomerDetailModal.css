@@ -126,6 +126,14 @@
     color: #ef4444;
 }
 
+<<<<<<< HEAD
+=======
+.btn-cancel-reservation:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+>>>>>>> feature/login
 /* 횟수 배지 (예: 2/3회) */
 .count-badge {
     background-color: #f3f4f6;
@@ -134,6 +142,10 @@
     font-weight: 800;
     padding: 6px 12px;
     border-radius: 20px;
+<<<<<<< HEAD
+=======
+    flex-shrink: 0;
+>>>>>>> feature/login
 }
 
 .empty-card {
@@ -144,4 +156,18 @@
     background-color: #fcfcfc;
     border: 1px solid #f0f0f0;
     border-radius: 16px;
+<<<<<<< HEAD
 }
+=======
+}
+
+/* 6. 로딩 상태 */
+.loading-state {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 60px 20px;
+    font-size: 14px;
+    color: #999999;
+}
+>>>>>>> feature/login
