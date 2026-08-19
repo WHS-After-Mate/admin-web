@@ -96,7 +96,9 @@ export default function TreatmentModal({
     // 모달이 열릴 때 폼 초기화 및 API 데이터 로드
     useEffect(() => {
         if (isOpen) {
-            setDate(new Date().toISOString().split('T')[0]);
+            const now = new Date();
+            const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+            setDate(todayStr);
             setHour(String(new Date().getHours()).padStart(2, '0'));
             setMinute(String(Math.floor(new Date().getMinutes() / 5) * 5).padStart(2, '0'));
             setMemo('');
@@ -388,7 +390,7 @@ export default function TreatmentModal({
                             value={date}
                             onChange={(e) => setDate(e.target.value)}
                             onClick={(e) => { if (e.target.showPicker) e.target.showPicker(); }}
-                            min={new Date().toISOString().split('T')[0]}
+                            min={(() => { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`; })()}
                             className="form-input date-input"
                             required
                             disabled={isSubmitting}

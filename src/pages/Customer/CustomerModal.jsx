@@ -158,13 +158,11 @@ export default function CustomerModal({ isOpen, onClose, onAddCustomer, onRefres
                 <div className="form-group">
                     <label className="form-label">생일 *</label>
                     <input
-                        type="text"
+                        type="date"
                         name="birthdate"
                         value={formData.birthdate}
                         onChange={handleChange}
-                        onFocus={(e) => { e.target.type = 'date'; }}
-                        onBlur={(e) => { if (!e.target.value) e.target.type = 'text'; }}
-                        placeholder="YYYY-MM-DD"
+                        onKeyDown={(e) => e.preventDefault()}
                         className={`form-input date-input ${errors.birthdate ? 'input-error' : ''}`}
                         disabled={isSubmitting}
                     />
