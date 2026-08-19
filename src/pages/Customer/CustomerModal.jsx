@@ -74,14 +74,14 @@ export default function CustomerModal({ isOpen, onClose, onAddCustomer, onRefres
         try {
             setIsSubmitting(true);
 
-            const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4100';
+            const baseUrl = import.meta.env.VITE_API_URL ?? '';
             const token = localStorage.getItem('token');
 
             const payload = {
                 name: formData.name.trim(),
                 phone: formData.phone.replace(/[^0-9]/g, ''),
                 birthDate: formData.birthdate,
-                memo: formData.memo.trim() || undefined,
+                notes: formData.memo.trim() || undefined,
             };
 
             const response = await fetch(`${baseUrl}/api/v1/patients`, {

@@ -37,7 +37,7 @@ export default function CustomerPage({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4100';
+  const baseUrl = import.meta.env.VITE_API_URL ?? '';
 
   // 2. 백엔드 API 데이터 페칭 함수 (통합 및 정규화 버전)
   const fetchCustomers = useCallback(async (query = '') => {
@@ -92,6 +92,7 @@ export default function CustomerPage({
           email: c.email || '-',
           patientNo: c.patientNo || c.patient_no || '-',
           clinic: c.clinic || c.clinic_name || '림프드 클리닉',
+          memo: c.notes || c.memo || c.note || '',
           lastTreatment,
           lastDate,
           historyCount,
@@ -182,7 +183,7 @@ export default function CustomerPage({
 
       if (response.ok) {
         const result = await response.json();
-        // 응답 구조 정규화 — careRecords가 상위 레벨에 있을 수 있으므로 병합
+        // 응답 구조 정규화
         let fullCustomerData;
         if (result.data) {
           fullCustomerData = result.data;
@@ -194,6 +195,11 @@ export default function CustomerPage({
           };
         } else {
           fullCustomerData = result;
+        }
+
+        // notes를 모든 가능한 위치에서 추출
+        if (!fullCustomerData.notes && !fullCustomerData.memo) {
+          fullCustomerData.notes = result.notes || result.memo || result.patient?.notes || result.patient?.memo || customer.notes || customer.memo || '';
         }
         onOpenDetailModal(fullCustomerData, handleRefreshData);
       } else {
@@ -297,7 +303,7 @@ export default function CustomerPage({
                 <div className="treatment-info">
                   <span className="label">최근 관리</span>
                   <span className="value">{customer.lastTreatment}</span>
-                  <span className="date">{customer.lastDate}</span>
+                  <span className="date">{customer.lastDate !== '-' ? customer.lastDate : ''}</span>
                 </div>
 
                 {/* 작업 버튼 2개 영역 */}

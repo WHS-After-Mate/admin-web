@@ -489,7 +489,11 @@
 .treatment-form .form-input,
 .treatment-form .form-textarea,
 .treatment-form .combobox-input {
-    position: relative;
-    z-index: 1;
     pointer-events: auto;
+}
+
+.treatment-form .date-input {
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
 }

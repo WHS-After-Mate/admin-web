@@ -27,7 +27,7 @@ export default function CustomerDetailModal({
     onOpenTreatmentModal,
     onRefreshData,
 }) {
-    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4100';
+    const baseUrl = import.meta.env.VITE_API_URL ?? '';
 
     const [patient, setPatient] = useState(null);
     const [patientDetail, setPatientDetail] = useState(null);
@@ -72,25 +72,26 @@ export default function CustomerDetailModal({
             }
 
             const data = await response.json();
+            console.log('[RAW API RESPONSE] GET /patients/{id}:', data);
             // 응답 구조 정규화:
-            // Case 1: { data: { ...patient, careRecords: [...] } }
-            // Case 2: { patient: { ... }, careRecords: [...] }
-            // Case 3: { ...patient, careRecords: [...] } (플랫 구조)
             let resolved;
             if (data.data) {
-                // data.data에 환자 정보가 래핑된 경우
                 resolved = data.data;
             } else if (data.patient) {
-                // 환자 기본 정보가 patient 키에 분리된 경우 — 상위 레벨의 careRecords/reservations 병합
                 resolved = {
                     ...data.patient,
                     careRecords: data.patient.careRecords || data.careRecords || data.care_records || [],
                     reservations: data.patient.reservations || data.reservations || [],
                 };
             } else {
-                // 플랫 구조 (모든 필드가 최상위에 위치)
                 resolved = data;
             }
+
+            // notes/memo를 모든 가능한 위치에서 추출하여 보장
+            if (!resolved.notes && !resolved.memo) {
+                resolved.notes = data.notes || data.memo || data.patient?.notes || data.patient?.memo || '';
+            }
+
             setPatient(resolved);
             setPatientDetail(resolved);
         } catch (error) {
@@ -108,22 +109,31 @@ export default function CustomerDetailModal({
     // ─────────────────────────────────────────────
     const detailData = patientDetail || customerData || {};
 
-    const patientNo = detailData.patient_no || detailData.patientNo || '-';
-    const name = detailData.name || '정보 없음';
-    const phone = formatPhone(detailData.phone || detailData.phone_number || '');
-    const birthDate = detailData.birth_date || detailData.birthDate || detailData.birth || '-';
-    const memo = detailData.memo || detailData.note || detailData.notes || detailData.comment || detailData.remark || '';
-    const patientId = detailData.id || detailData.patient_id || detailData.patientId || '';
+    // 백엔드 응답이 { patient: {...}, careRecords: [...] } 구조일 수 있으므로 patient 내부 우선 참조
+    const p = detailData.patient || detailData;
+
+    const patientNo = p.patient_no || p.patientNo || detailData.patient_no || detailData.patientNo || '-';
+    const name = p.name || detailData.name || '정보 없음';
+    const phone = formatPhone(p.phone || p.phone_number || detailData.phone || detailData.phone_number || '');
+    const birthDate = p.birth_date || p.birthDate || p.birth || detailData.birth_date || detailData.birthDate || '-';
+    const memo = detailData?.patient?.notes 
+        ?? detailData?.patient?.memo 
+        ?? detailData?.notes 
+        ?? detailData?.memo 
+        ?? customerData?.patient?.notes
+        ?? customerData?.notes 
+        ?? customerData?.memo 
+        ?? '';
+    const patientId = p.id || p.patient_id || p.patientId || detailData.id || detailData.patient_id || detailData.patientId || '';
 
     // 백엔드 명세: careRecords (완료된 시술 기록)
-    const careRecords = Array.isArray(detailData.careRecords)
-        ? detailData.careRecords
-        : (Array.isArray(detailData.care_records) ? detailData.care_records : (detailData.history || []));
+    const careRecords = Array.isArray(p.careRecords) ? p.careRecords
+        : (Array.isArray(detailData.careRecords) ? detailData.careRecords
+        : (Array.isArray(detailData.care_records) ? detailData.care_records : (p.care_records || [])));
 
     // 백엔드 명세: reservations (신규/예정 예약)
-    const reservations = Array.isArray(detailData.reservations)
-        ? detailData.reservations
-        : [];
+    const reservations = Array.isArray(p.reservations) ? p.reservations
+        : (Array.isArray(detailData.reservations) ? detailData.reservations : []);
 
     // 날짜 문자열에서 YYYY-MM-DD (앞 10자리)만 안전하게 추출하는 헬퍼
     // "2026-08-19T14:30:00+09:00", "2026-08-19 14:30", "2026-08-19" 등 모든 포맷 대응
@@ -339,9 +349,32 @@ export default function CustomerDetailModal({
                         <div className="form-group">
                             <label className="form-label">기타 메모</label>
                             <textarea
-                                value={memo || '등록된 메모가 없습니다.'}
+                                value={(() => {
+                                    // 1. 고객 기본 메모
+                                    const patientNotes = memo ? `[고객 기본 메모]\n${memo}` : '';
+
+                                    // 2. 관리 기록별 메모 수집
+                                    const careMemos = careRecords
+                                        .filter((rec) => {
+                                            return rec.memo || rec.notes || rec.doctor_comment || rec.doctorComment
+                                                || rec.care_note || rec.description;
+                                        })
+                                        .map((rec) => {
+                                            const careName = rec.careName || rec.care_name || rec.treatmentName || rec.treatment_name || '관리';
+                                            const date = rec.careDate || rec.care_date || rec.performedAt || '';
+                                            const dateStr = date ? date.slice(0, 10) : '';
+                                            const memoText = rec.memo || rec.notes || rec.doctor_comment || rec.doctorComment
+                                                || rec.care_note || rec.description || '';
+                                            return `[관리 메모 - ${dateStr}] ${careName}\n${memoText}`;
+                                        })
+                                        .join('\n\n');
+
+                                    const combined = [patientNotes, careMemos].filter(Boolean).join('\n\n');
+                                    return combined;
+                                })()}
+                                placeholder="작성된 기타 메모가 없습니다."
                                 readOnly
-                                rows="2"
+                                rows={5}
                                 className="form-textarea"
                             />
                         </div>

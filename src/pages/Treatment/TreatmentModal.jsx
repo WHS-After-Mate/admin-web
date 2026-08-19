@@ -69,7 +69,7 @@ export default function TreatmentModal({
     // customer가 null/undefined일 때 빈 객체로 안전하게 폴백
     const safeCustomer = customer || {};
 
-    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4100';
+    const baseUrl = import.meta.env.VITE_API_URL ?? '';
 
     // 오늘 날짜 및 기본 시간
     const today = new Date().toISOString().split('T')[0];
@@ -82,14 +82,15 @@ export default function TreatmentModal({
     const [memo, setMemo] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // 카탈로그 & 부위 API 데이터
+    // 카탈로그 & 부위 & 의료진 API 데이터
     const [catalog, setCatalog] = useState([]);
     const [isCatalogLoading, setIsCatalogLoading] = useState(false);
     const [bodyParts, setBodyParts] = useState([]);
+    const [doctors, setDoctors] = useState([]);
 
     // 동적 관리 항목 배열
     const [treatmentItems, setTreatmentItems] = useState([
-        { id: Date.now(), careName: '', partOfBody: [], totalSessions: 1 },
+        { id: Date.now(), careName: '', partOfBody: [], totalSessions: 1, practitioner: '' },
     ]);
 
     // 모달이 열릴 때 폼 초기화 및 API 데이터 로드
@@ -100,10 +101,11 @@ export default function TreatmentModal({
             setMinute(String(Math.floor(new Date().getMinutes() / 5) * 5).padStart(2, '0'));
             setMemo('');
             setTreatmentItems([
-                { id: Date.now(), careName: '', partOfBody: [], totalSessions: 1 },
+                { id: Date.now(), careName: '', partOfBody: [], totalSessions: 1, practitioner: '' },
             ]);
             fetchCatalog();
             fetchBodyParts();
+            fetchDoctors();
         }
     }, [isOpen]);
 
@@ -145,12 +147,6 @@ export default function TreatmentModal({
 
             // brand별 필터링: 각 항목에서 brand 관련 필드를 찾아 현재 로그인 brand와 매칭
             if (brand && list.length > 1) {
-                // [임시 디버그] 첫 항목의 키와 값을 콘솔에 출력하여 brand 필드명 확인
-                if (list[0]) {
-                    console.log('[CATALOG] 현재 brand:', brand);
-                    console.log('[CATALOG] 첫 항목 키:', Object.keys(list[0]));
-                    console.log('[CATALOG] 첫 항목 전체:', list[0]);
-                }
                 const brandLower = brand.toLowerCase();
                 const filtered = list.filter((item) => {
                     // 가능한 모든 brand 관련 필드 탐색
@@ -196,11 +192,30 @@ export default function TreatmentModal({
         }
     };
 
+    const fetchDoctors = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${baseUrl}/api/v1/clinic-info`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token && { Authorization: `Bearer ${token}` }),
+                },
+            });
+            if (!response.ok) throw new Error('의료진 목록 조회 실패');
+            const data = await response.json();
+            const list = Array.isArray(data.doctors) ? data.doctors : (data.practitioners || data.data?.doctors || []);
+            setDoctors(list);
+        } catch (err) {
+            console.error('clinic-info(doctors) 로드 실패:', err);
+            setDoctors([]);
+        }
+    };
+
     // "+ 관리 추가" 버튼 핸들러
     const handleAddItem = () => {
         setTreatmentItems((prev) => [
             ...prev,
-            { id: Date.now() + Math.random(), careName: '', partOfBody: [], totalSessions: 1 },
+            { id: Date.now() + Math.random(), careName: '', partOfBody: [], totalSessions: 1, practitioner: '' },
         ]);
     };
 
@@ -231,7 +246,6 @@ export default function TreatmentModal({
                 return {
                     ...item,
                     careName: catalogItem.care_name || catalogItem.careName || catalogItem.name || catalogItem.treatmentName || catalogItem.treatment_name || '',
-                    partOfBody: catalogItem.body_parts || catalogItem.bodyParts || item.partOfBody || [],
                 };
             })
         );
@@ -286,6 +300,7 @@ export default function TreatmentModal({
                     careName: item.careName.trim(),
                     careDate: careDate,
                     partOfBody: item.partOfBody || [],
+                    ...(item.practitioner && { practitioner: item.practitioner }),
                     ...(memo.trim() && { memo: memo.trim() }),
                 };
 
@@ -372,6 +387,7 @@ export default function TreatmentModal({
                             type="date"
                             value={date}
                             onChange={(e) => setDate(e.target.value)}
+                            onClick={(e) => { if (e.target.showPicker) e.target.showPicker(); }}
                             min={new Date().toISOString().split('T')[0]}
                             className="form-input date-input"
                             required
@@ -415,6 +431,7 @@ export default function TreatmentModal({
                                 catalog={catalog}
                                 isCatalogLoading={isCatalogLoading}
                                 bodyParts={bodyParts}
+                                doctors={doctors}
                                 isSubmitting={isSubmitting}
                                 onItemChange={handleItemChange}
                                 onCatalogSelect={handleCatalogSelect}
@@ -483,6 +500,7 @@ function TreatmentItemRow({
     catalog,
     isCatalogLoading,
     bodyParts,
+    doctors,
     isSubmitting,
     onItemChange,
     onCatalogSelect,
@@ -675,7 +693,26 @@ function TreatmentItemRow({
                 />
             </div>
 
-            {/* 4. 항목 삭제 버튼 */}
+            {/* 4. 담당 의사 Custom Select */}
+            <div className="form-group flex-1">
+                <label className="sub-label">담당의</label>
+                <CustomSelect
+                    value={item.practitioner || ''}
+                    options={
+                        doctors.length > 0
+                            ? doctors.map((doc) => ({
+                                value: typeof doc === 'string' ? doc : (doc.name || doc.doctorName || doc.id || ''),
+                                label: typeof doc === 'string' ? doc : (doc.name || doc.doctorName || doc.label || ''),
+                            }))
+                            : [{ value: '', label: '의사 정보 없음' }]
+                    }
+                    onChange={(val) => onItemChange(item.id, 'practitioner', val)}
+                    disabled={isSubmitting}
+                    placeholder="선택"
+                />
+            </div>
+
+            {/* 5. 항목 삭제 버튼 */}
             <button
                 type="button"
                 className="remove-item-btn"

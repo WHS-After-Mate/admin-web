@@ -5,7 +5,7 @@
  * localStorage에서 즉시 읽으므로 로그인 직후에도 새 토큰이 적용됩니다.
  */
 
-const getBaseUrl = () => import.meta.env.VITE_API_URL || 'http://localhost:4100';
+const getBaseUrl = () => import.meta.env.VITE_API_URL ?? '';
 
 /**
  * 인증 헤더가 포함된 fetch 요청

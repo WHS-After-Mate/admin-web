@@ -62,7 +62,7 @@ export default function Sidebar() {
     }
 
     try {
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4100';
+      const baseUrl = import.meta.env.VITE_API_URL ?? '';
       const token = localStorage.getItem('token');
 
       if (token) {

@@ -8,7 +8,7 @@ export default function DashboardPage({
   onNavigateToCustomer, // 고객 관리 전체 페이지 이동
   refreshTrigger,       // 외부 데이터 갱신 트리거 (App 레벨)
 }) {
-  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4100';
+  const baseUrl = import.meta.env.VITE_API_URL ?? '';
 
   // 통계 카드 상태
   const [visitStats, setVisitStats] = useState({

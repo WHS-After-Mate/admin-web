@@ -32,3 +32,4 @@ src/.env
 >>>>>>> feature/login
 __pycache__/
 *.pyc
+.vercel

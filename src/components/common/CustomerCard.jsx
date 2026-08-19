@@ -165,7 +165,7 @@ export default function CustomerCard({ customer, onOpenDetailModal, onRefreshDat
             <div className="cc-treatment">
                 <span className="cc-treatment-label">최근 관리</span>
                 <strong className="cc-treatment-name">{careName}</strong>
-                <span className="cc-treatment-date">{careDate}</span>
+                <span className="cc-treatment-date">{careDate !== '-' ? careDate : ''}</span>
             </div>
 
             {/* 상세 보기 버튼 */}

@@ -44,7 +44,7 @@ export default function LoginPage() {
 
     try {
       setIsSubmitting(true);
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4100';
+      const baseUrl = import.meta.env.VITE_API_URL ?? '';
 
       // 백엔드 로그인 API 호출
       const response = await fetch(`${baseUrl}/api/v1/auth/login`, {
