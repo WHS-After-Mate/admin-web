@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getPractitionerColor } from '../../components/common/CustomerCard';
 import './CustomerPage.css';
 
 /**
@@ -128,7 +129,19 @@ export default function CustomerPage({
 
       if (response.ok) {
         const result = await response.json();
-        const fullCustomerData = result.data || result.patient || result;
+        // 응답 구조 정규화 — careRecords가 상위 레벨에 있을 수 있으므로 병합
+        let fullCustomerData;
+        if (result.data) {
+          fullCustomerData = result.data;
+        } else if (result.patient) {
+          fullCustomerData = {
+            ...result.patient,
+            careRecords: result.patient.careRecords || result.careRecords || result.care_records || [],
+            reservations: result.patient.reservations || result.reservations || [],
+          };
+        } else {
+          fullCustomerData = result;
+        }
         onOpenDetailModal(fullCustomerData, handleRefreshData);
       } else {
         console.warn(`상세 조회 실패 (Status: ${response.status})`);
@@ -223,9 +236,12 @@ export default function CustomerPage({
 
                 {/* 클리닉 태그 */}
                 <div className="clinic-badge-wrapper">
-                  <span className="clinic-badge">
-                    <span className="dot"></span>
-                    {customer.historyCount > 0 ? `${customer.historyCount}건의 관리 이력` : '관리 이력 없음'}
+                  <span className={`clinic-badge${customer.historyCount > 0 ? ' clinic-badge--active' : ''}`}>
+                    <span
+                      className="dot"
+                      style={{ backgroundColor: getPractitionerColor(customer.practitioner || customer.doctor || customer.doctorName || customer.doctor_name || null) }}
+                    ></span>
+                    {customer.historyCount > 0 ? `${customer.historyCount}건의 관리` : '관리 이력 없음'}
                   </span>
                 </div>
 

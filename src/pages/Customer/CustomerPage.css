@@ -148,16 +148,26 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background-color: #f1eeff;
-  color: #4b3bb3;
+  background-color: #f2f4f8;
+  color: #888888;
   padding: 6px 14px;
   border-radius: 20px;
   font-size: 12px;
   font-weight: 700;
 }
 
+.clinic-badge--active {
+  background-color: #eef2ff;
+  color: #4b3bb3;
+}
+
 .clinic-badge .dot {
-  color: #7c62ff;
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #8da4f7;
+  flex-shrink: 0;
 }
 
 /* 최근 관리 스타일 */

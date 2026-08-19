@@ -13,6 +13,49 @@ function formatPhone(phone) {
 }
 
 /**
+ * 담당자별 색상 점 컬러 맵
+ * 미리 정의된 담당자명이 있으면 해당 색상을 반환하고,
+ * 없으면 이름 해시값 기반으로 팔레트에서 동적 매핑
+ */
+const PRACTITIONER_COLOR_MAP = {
+    admin: '#8b5cf6',      // 보라
+    admin1: '#8b5cf6',     // 보라
+    admin2: '#10b981',     // 초록
+    admin3: '#f59e0b',     // 앰버
+};
+
+const COLOR_PALETTE = [
+    '#6366f1', // 인디고
+    '#8b5cf6', // 보라
+    '#10b981', // 에메랄드
+    '#f59e0b', // 앰버
+    '#ef4444', // 레드
+    '#06b6d4', // 시안
+    '#ec4899', // 핑크
+    '#14b8a6', // 틸
+];
+
+export function getPractitionerColor(practitioner) {
+    if (!practitioner) return '#8da4f7'; // 기본 파랑
+
+    const key = String(practitioner).toLowerCase().trim();
+
+    // 미리 정의된 매핑 확인
+    if (PRACTITIONER_COLOR_MAP[key]) {
+        return PRACTITIONER_COLOR_MAP[key];
+    }
+
+    // 문자열 해시 기반 팔레트 매핑
+    let hash = 0;
+    for (let i = 0; i < key.length; i++) {
+        hash = key.charCodeAt(i) + ((hash << 5) - hash);
+        hash |= 0; // 32bit int
+    }
+    const index = Math.abs(hash) % COLOR_PALETTE.length;
+    return COLOR_PALETTE[index];
+}
+
+/**
  * careRecords에서 최근 관리명/날짜 추출
  */
 function getLatestCare(customer) {
@@ -44,6 +87,21 @@ function getLatestCare(customer) {
 }
 
 /**
+ * 관리 이력 건수 계산
+ */
+function getCareCount(customer) {
+    const records = Array.isArray(customer.careRecords) ? customer.careRecords : (customer.care_records || customer.treatments || customer.history || []);
+    return customer.totalCareCount || customer.total_care_count || customer.historyCount || customer.history_count || records.length || 0;
+}
+
+/**
+ * 담당 관리자/의료진 추출
+ */
+function getPractitioner(customer) {
+    return customer.practitioner || customer.doctor || customer.doctorName || customer.doctor_name || customer.admin || customer.assignedTo || customer.assigned_to || null;
+}
+
+/**
  * 공통 고객 카드 컴포넌트
  *
  * Props:
@@ -55,11 +113,11 @@ export default function CustomerCard({ customer, onOpenDetailModal, onRefreshDat
     const name = customer.name || '이름 없음';
     const phone = formatPhone(customer.phone || customer.phone_number || '');
     const patientNo = customer.patientNo || customer.patient_no || '-';
-    const brand = customer.brand || customer.clinic || '-';
 
-    const records = Array.isArray(customer.careRecords) ? customer.careRecords : (customer.care_records || customer.treatments || customer.history || []);
-    const historyCount = customer.historyCount || customer.history_count || records.length || 0;
+    const historyCount = getCareCount(customer);
     const { careName, careDate } = getLatestCare(customer);
+    const practitioner = getPractitioner(customer);
+    const dotColor = getPractitionerColor(practitioner);
 
     const handleDetailClick = () => {
         if (onOpenDetailModal) {
@@ -78,9 +136,12 @@ export default function CustomerCard({ customer, onOpenDetailModal, onRefreshDat
 
             {/* 관리 이력 배지 */}
             <div className="cc-badge-area">
-                <span className="cc-badge">
-                    <span className="cc-badge-dot"></span>
-                    {historyCount > 0 ? `${historyCount}건의 관리 이력` : '관리 이력 없음'}
+                <span className={`cc-badge ${historyCount > 0 ? 'cc-badge--active' : ''}`}>
+                    <span
+                        className="cc-badge-dot"
+                        style={{ backgroundColor: dotColor }}
+                    ></span>
+                    {historyCount > 0 ? `${historyCount}건의 관리` : '관리 이력 없음'}
                 </span>
             </div>
 

@@ -62,10 +62,16 @@ function CustomSelect({ value, options, onChange, disabled, placeholder }) {
 export default function TreatmentModal({
     isOpen,
     onClose,
-    customer = {},
+    customer,
     onSubmitTreatment,
     onRefreshData,
 }) {
+    // customer가 null/undefined일 때 빈 객체로 안전하게 폴백
+    const safeCustomer = customer || {};
+
+    // [DEBUG] 모달이 받은 Props 로그 출력
+    console.log('[DEBUG] TreatmentModal received Props:', { isOpen, customer: safeCustomer, onSubmitTreatment: !!onSubmitTreatment, onRefreshData: !!onRefreshData });
+
     const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4100';
 
     // 오늘 날짜 및 기본 시간
@@ -112,12 +118,34 @@ export default function TreatmentModal({
                     ...(token && { Authorization: `Bearer ${token}` }),
                 },
             });
-            if (!response.ok) throw new Error('카탈로그 조회 실패');
+            if (!response.ok) throw new Error(`카탈로그 조회 실패: ${response.status}`);
             const data = await response.json();
-            const list = Array.isArray(data) ? data : data.catalog || data.items || [];
+            console.log('Catalog Response:', data);
+
+            // 응답 구조 추출 — 가능한 모든 래핑 형태 대응
+            let list;
+            if (Array.isArray(data)) {
+                list = data;
+            } else if (Array.isArray(data.data)) {
+                list = data.data;
+            } else if (Array.isArray(data.catalog)) {
+                list = data.catalog;
+            } else if (Array.isArray(data.items)) {
+                list = data.items;
+            } else if (Array.isArray(data.treatments)) {
+                list = data.treatments;
+            } else if (Array.isArray(data.treatmentCatalog)) {
+                list = data.treatmentCatalog;
+            } else if (Array.isArray(data.treatment_catalog)) {
+                list = data.treatment_catalog;
+            } else {
+                // 최후 수단: 객체의 첫 번째 배열 프로퍼티 탐색
+                list = Object.values(data).find((v) => Array.isArray(v)) || [];
+            }
             setCatalog(list);
         } catch (err) {
             console.error('treatment-catalog 로드 실패:', err);
+            setCatalog([]);
         }
     };
 
@@ -173,9 +201,9 @@ export default function TreatmentModal({
                 if (item.id !== id) return item;
                 return {
                     ...item,
-                    careName: catalogItem.care_name || catalogItem.careName || '',
-                    careType: catalogItem.care_type || catalogItem.careType || 'skincare',
-                    partOfBody: catalogItem.body_parts || catalogItem.bodyParts || [],
+                    careName: catalogItem.care_name || catalogItem.careName || catalogItem.name || catalogItem.treatmentName || catalogItem.treatment_name || '',
+                    careType: catalogItem.care_type || catalogItem.careType || catalogItem.type || 'skincare',
+                    partOfBody: catalogItem.body_parts || catalogItem.bodyParts || item.partOfBody || [],
                 };
             })
         );
@@ -211,7 +239,10 @@ export default function TreatmentModal({
             return;
         }
 
-        const patientId = customer.id || customer.customer_id || customer.patientId;
+        const patientId = safeCustomer.id || safeCustomer.customer_id || safeCustomer.patientId || safeCustomer.patient_id;
+        console.log('[DEBUG] handleSubmit - customer object:', safeCustomer);
+        console.log('[DEBUG] handleSubmit - extracted patientId:', patientId);
+        console.log('[DEBUG] handleSubmit - customer keys:', Object.keys(safeCustomer));
         if (!patientId) {
             alert('고객 정보(ID)를 찾을 수 없습니다.');
             return;
@@ -279,7 +310,7 @@ export default function TreatmentModal({
         }
     };
 
-    const customerName = customer.name || '고객';
+    const customerName = safeCustomer.name || '고객';
 
     // 시/분 옵션 생성
     const hourOptions = Array.from({ length: 24 }, (_, i) => {
@@ -429,6 +460,7 @@ function TreatmentItemRow({
 
     const nameRef = useRef(null);
     const bodyRef = useRef(null);
+    const nameInputRef = useRef(null);
 
     // 외부 클릭 시 드롭다운 닫기
     useEffect(() => {
@@ -449,11 +481,16 @@ function TreatmentItemRow({
         setNameQuery(item.careName || '');
     }, [item.careName]);
 
-    // 카탈로그 필터링 (검색어 기반)
-    const filteredCatalog = catalog.filter((c) => {
-        const name = c.care_name || c.careName || '';
-        return name.toLowerCase().includes(nameQuery.toLowerCase());
-    });
+    // 카탈로그 항목에서 관리명 추출 헬퍼
+    const getCatalogName = (c) => c.care_name || c.careName || c.name || c.treatmentName || c.treatment_name || '';
+
+    // 카탈로그 필터링 (검색어 기반 — 빈 문자열이면 전체 표시)
+    const filteredCatalog = nameQuery.trim() === ''
+        ? catalog
+        : catalog.filter((c) => {
+            const name = getCatalogName(c);
+            return name.toLowerCase().includes(nameQuery.toLowerCase());
+        });
 
     // 관리명 입력 변경 핸들러
     const handleNameInputChange = (e) => {
@@ -462,7 +499,7 @@ function TreatmentItemRow({
         onItemChange(item.id, 'careName', value);
         // 카탈로그에 매칭 안 되면 기본 careType
         const match = catalog.find(
-            (c) => (c.care_name || c.careName || '').toLowerCase() === value.toLowerCase()
+            (c) => getCatalogName(c).toLowerCase() === value.toLowerCase()
         );
         if (!match) {
             onItemChange(item.id, 'careType', 'skincare');
@@ -470,10 +507,20 @@ function TreatmentItemRow({
         setShowNameDropdown(true);
     };
 
+    // 드롭다운 화살표 클릭 핸들러
+    const handleArrowClick = () => {
+        if (isSubmitting) return;
+        setShowNameDropdown((prev) => !prev);
+        // 드롭다운 열면서 input에 포커스
+        if (nameInputRef.current) {
+            nameInputRef.current.focus();
+        }
+    };
+
     // 카탈로그 항목 선택
     const handleSelectCatalogItem = (catalogItem) => {
         onCatalogSelect(item.id, catalogItem);
-        setNameQuery(catalogItem.care_name || catalogItem.careName || '');
+        setNameQuery(getCatalogName(catalogItem));
         setShowNameDropdown(false);
     };
 
@@ -497,6 +544,7 @@ function TreatmentItemRow({
                 <label className="sub-label">관리명</label>
                 <div className="combobox-wrapper">
                     <input
+                        ref={nameInputRef}
                         type="text"
                         value={nameQuery}
                         onChange={handleNameInputChange}
@@ -506,9 +554,18 @@ function TreatmentItemRow({
                         disabled={isSubmitting}
                         autoComplete="off"
                     />
-                    <svg className="combobox-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#333333" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="m6 9 6 6 6-6" />
-                    </svg>
+                    <button
+                        type="button"
+                        className="combobox-arrow-btn"
+                        onClick={handleArrowClick}
+                        tabIndex={-1}
+                        disabled={isSubmitting}
+                        aria-label="관리명 목록 열기"
+                    >
+                        <svg className="combobox-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#333333" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="m6 9 6 6 6-6" />
+                        </svg>
+                    </button>
                     {showNameDropdown && (
                         <ul className="combobox-dropdown">
                             {filteredCatalog.length > 0 ? (
@@ -518,12 +575,14 @@ function TreatmentItemRow({
                                         className="combobox-option"
                                         onMouseDown={() => handleSelectCatalogItem(c)}
                                     >
-                                        {c.care_name || c.careName}
+                                        {getCatalogName(c)}
                                     </li>
                                 ))
                             ) : (
                                 <li className="combobox-option combobox-empty">
-                                    {nameQuery ? '검색 결과가 없습니다. 직접 입력해 주세요.' : '관리명을 입력하여 검색하세요.'}
+                                    {nameQuery.trim()
+                                        ? '검색 결과가 없습니다. 직접 입력 가능합니다.'
+                                        : '등록된 관리 항목이 없습니다.'}
                                 </li>
                             )}
                         </ul>

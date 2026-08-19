@@ -30,6 +30,7 @@ export default function CustomerDetailModal({
     const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4100';
 
     const [patient, setPatient] = useState(null);
+    const [patientDetail, setPatientDetail] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [canceledReservations, setCanceledReservations] = useState({});
@@ -42,6 +43,7 @@ export default function CustomerDetailModal({
         if (isOpen && customerData) {
             // 즉시 Props 데이터로 표시 (API 응답 대기 중에도 기본 정보 노출)
             setPatient(customerData);
+            setPatientDetail(null);
             const patientId = customerData.id || customerData.patient_id || customerData.patientId;
             if (patientId) {
                 fetchPatientDetail(patientId);
@@ -50,6 +52,7 @@ export default function CustomerDetailModal({
         }
         if (!isOpen) {
             setPatient(null);
+            setPatientDetail(null);
         }
     }, [isOpen, customerData]);
 
@@ -69,9 +72,27 @@ export default function CustomerDetailModal({
             }
 
             const data = await response.json();
-            // 응답 구조 정규화 (data.data / data.patient / data 직접)
-            const resolved = data.data || data.patient || data;
+            // 응답 구조 정규화:
+            // Case 1: { data: { ...patient, careRecords: [...] } }
+            // Case 2: { patient: { ... }, careRecords: [...] }
+            // Case 3: { ...patient, careRecords: [...] } (플랫 구조)
+            let resolved;
+            if (data.data) {
+                // data.data에 환자 정보가 래핑된 경우
+                resolved = data.data;
+            } else if (data.patient) {
+                // 환자 기본 정보가 patient 키에 분리된 경우 — 상위 레벨의 careRecords/reservations 병합
+                resolved = {
+                    ...data.patient,
+                    careRecords: data.patient.careRecords || data.careRecords || data.care_records || [],
+                    reservations: data.patient.reservations || data.reservations || [],
+                };
+            } else {
+                // 플랫 구조 (모든 필드가 최상위에 위치)
+                resolved = data;
+            }
             setPatient(resolved);
+            setPatientDetail(resolved);
         } catch (error) {
             console.error('환자 상세 조회 오류:', error);
             // Fallback: customerData 그대로 유지 (이미 setPatient(customerData) 된 상태)
@@ -85,40 +106,69 @@ export default function CustomerDetailModal({
     // ─────────────────────────────────────────────
     // 데이터 매핑
     // ─────────────────────────────────────────────
-    const raw = patient || customerData || {};
+    const detailData = patientDetail || customerData || {};
 
-    const patientNo = raw.patient_no || raw.patientNo || '-';
-    const name = raw.name || '정보 없음';
-    const phone = formatPhone(raw.phone || raw.phone_number || '');
-    const birthDate = raw.birth_date || raw.birthDate || raw.birth || '-';
-    const memo = raw.memo || '';
-    const patientId = raw.id || raw.patient_id || raw.patientId || '';
+    const patientNo = detailData.patient_no || detailData.patientNo || '-';
+    const name = detailData.name || '정보 없음';
+    const phone = formatPhone(detailData.phone || detailData.phone_number || '');
+    const birthDate = detailData.birth_date || detailData.birthDate || detailData.birth || '-';
+    const memo = detailData.memo || '';
+    const patientId = detailData.id || detailData.patient_id || detailData.patientId || '';
 
-    // careRecords 기반 예약/관리 분류 (오늘 날짜 기준)
-    const today = new Date().toISOString().split('T')[0];
-    const careRecords = Array.isArray(raw.careRecords) ? raw.careRecords : (raw.care_records || raw.treatments || raw.history || []);
+    // 백엔드 명세: careRecords (완료된 시술 기록)
+    const careRecords = Array.isArray(detailData.careRecords)
+        ? detailData.careRecords
+        : (Array.isArray(detailData.care_records) ? detailData.care_records : (detailData.history || []));
 
-    const reservations = careRecords
+    // 백엔드 명세: reservations (신규/예정 예약)
+    const reservations = Array.isArray(detailData.reservations)
+        ? detailData.reservations
+        : [];
+
+    // 날짜 문자열에서 YYYY-MM-DD (앞 10자리)만 안전하게 추출하는 헬퍼
+    // "2026-08-19T14:30:00+09:00", "2026-08-19 14:30", "2026-08-19" 등 모든 포맷 대응
+    const toDateOnly = (dateValue) => {
+        if (!dateValue) return '';
+        const str = String(dateValue).trim();
+        // 앞 10자리가 YYYY-MM-DD 패턴이면 그대로 사용
+        if (str.length >= 10 && /^\d{4}-\d{2}-\d{2}/.test(str)) {
+            return str.slice(0, 10);
+        }
+        return str;
+    };
+
+    // KST(한국 시간) 기준 오늘 날짜 (YYYY-MM-DD)
+    const now = new Date();
+    const kstOffset = 9 * 60; // KST = UTC+9
+    const kstTime = new Date(now.getTime() + (kstOffset + now.getTimezoneOffset()) * 60000);
+    const today = `${kstTime.getFullYear()}-${String(kstTime.getMonth() + 1).padStart(2, '0')}-${String(kstTime.getDate()).padStart(2, '0')}`;
+
+    // careRecords 중 오늘 이전(포함) 기록만 관리 내역으로 표시
+    const history = careRecords
         .filter((rec) => {
-            const careDate = rec.careDate || rec.care_date || '';
-            return careDate > today;
+            const careDate = toDateOnly(rec.careDate || rec.care_date || rec.performedAt || rec.performed_at);
+            return careDate !== '' && careDate <= today;
         })
         .sort((a, b) => {
-            const dateA = a.careDate || a.care_date || '';
-            const dateB = b.careDate || b.care_date || '';
+            const dateA = toDateOnly(a.careDate || a.care_date || a.performedAt || a.performed_at);
+            const dateB = toDateOnly(b.careDate || b.care_date || b.performedAt || b.performed_at);
+            return dateB.localeCompare(dateA); // 최신순
+        });
+
+    // reservations가 별도 배열이 없는 경우, careRecords에서 미래 날짜를 예약으로 분류 (폴백)
+    const futureFromCareRecords = careRecords
+        .filter((rec) => {
+            const careDate = toDateOnly(rec.careDate || rec.care_date || rec.performedAt || rec.performed_at);
+            return careDate !== '' && careDate > today;
+        })
+        .sort((a, b) => {
+            const dateA = toDateOnly(a.careDate || a.care_date || a.performedAt || a.performed_at);
+            const dateB = toDateOnly(b.careDate || b.care_date || b.performedAt || b.performed_at);
             return dateA.localeCompare(dateB);
         });
 
-    const history = careRecords
-        .filter((rec) => {
-            const careDate = rec.careDate || rec.care_date || '';
-            return careDate <= today;
-        })
-        .sort((a, b) => {
-            const dateA = a.careDate || a.care_date || '';
-            const dateB = b.careDate || b.care_date || '';
-            return dateB.localeCompare(dateA); // 최신순
-        });
+    // 최종 예약 목록: 백엔드에서 별도 reservations가 있으면 우선, 없으면 careRecords에서 미래분 활용
+    const effectiveReservations = reservations.length > 0 ? reservations : futureFromCareRecords;
 
     // ─────────────────────────────────────────────
     // 회차 계산: 동일 careName 기준 누적 횟수 (날짜순 정렬 후 index 기반)
@@ -134,8 +184,8 @@ export default function CustomerDetailModal({
                 return rName === targetName;
             })
             .sort((a, b) => {
-                const dateA = a.careDate || a.care_date || '';
-                const dateB = b.careDate || b.care_date || '';
+                const dateA = a.careDate || a.care_date || a.performedAt || a.performed_at || '';
+                const dateB = b.careDate || b.care_date || b.performedAt || b.performed_at || '';
                 return dateA.localeCompare(dateB);
             });
 
@@ -221,8 +271,8 @@ export default function CustomerDetailModal({
     // ─────────────────────────────────────────────
     const renderCareCard = (rec) => {
         const careName = rec.careName || rec.care_name || rec.treatmentName || rec.treatment_name || '관리 항목';
-        const careDate = rec.careDate || rec.care_date || '-';
-        const partOfBody = rec.partOfBody || rec.part_of_body || rec.bodyParts || [];
+        const careDate = rec.careDate || rec.care_date || rec.performedAt || rec.performed_at || rec.reservedAt || rec.reserved_at || rec.date || '-';
+        const partOfBody = rec.partOfBody || rec.part_of_body || rec.bodyParts || rec.bodyPart || [];
         const bodyText = Array.isArray(partOfBody) ? partOfBody.join(', ') : (partOfBody || '-');
         const totalSessions = rec.totalSessions || rec.total_sessions || 0;
         const usedSessions = rec.usedSessions || rec.used_sessions || rec.currentSession || rec.current_session || 0;
@@ -296,11 +346,11 @@ export default function CustomerDetailModal({
                             />
                         </div>
 
-                        {/* 2. 예약 내역 Section (careDate > 오늘) */}
+                        {/* 2. 예약 내역 Section */}
                         <section className="detail-section">
                             <h3 className="section-title">예약 내역</h3>
-                            {reservations.length > 0 ? (
-                                reservations.map((rec) => {
+                            {effectiveReservations.length > 0 ? (
+                                effectiveReservations.map((rec) => {
                                     const recordId = rec.id || rec.care_record_id || rec.careRecordId;
                                     const isCanceled = canceledReservations[recordId];
                                     const { careName, careDate, bodyText, totalSessions } = renderCareCard(rec);
@@ -337,7 +387,7 @@ export default function CustomerDetailModal({
                             )}
                         </section>
 
-                        {/* 3. 관리 내역 Section (careDate <= 오늘) */}
+                        {/* 3. 관리 내역 Section (완료된 시술) */}
                         <section className="detail-section">
                             <div className="section-header">
                                 <h3 className="section-title">관리 내역</h3>
