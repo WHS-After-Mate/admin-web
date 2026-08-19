@@ -89,7 +89,7 @@ export default function TreatmentModal({
 
     // 동적 관리 항목 배열
     const [treatmentItems, setTreatmentItems] = useState([
-        { id: Date.now(), careName: '', careType: 'skincare', partOfBody: [], totalSessions: 1 },
+        { id: Date.now(), careName: '', partOfBody: [], totalSessions: 1 },
     ]);
 
     // 모달이 열릴 때 폼 초기화 및 API 데이터 로드
@@ -100,7 +100,7 @@ export default function TreatmentModal({
             setMinute(String(Math.floor(new Date().getMinutes() / 5) * 5).padStart(2, '0'));
             setMemo('');
             setTreatmentItems([
-                { id: Date.now(), careName: '', careType: 'skincare', partOfBody: [], totalSessions: 1 },
+                { id: Date.now(), careName: '', partOfBody: [], totalSessions: 1 },
             ]);
             fetchCatalog();
             fetchBodyParts();
@@ -111,6 +111,9 @@ export default function TreatmentModal({
         try {
             setIsCatalogLoading(true);
             const token = localStorage.getItem('token');
+            const brand = localStorage.getItem('brand') || '';
+
+            // treatment-catalog API 호출 (Bearer token 포함)
             const response = await fetch(`${baseUrl}/api/v1/treatment-catalog`, {
                 headers: {
                     'Content-Type': 'application/json',
@@ -119,7 +122,8 @@ export default function TreatmentModal({
             });
             if (!response.ok) throw new Error(`카탈로그 조회 실패: ${response.status}`);
             const data = await response.json();
-            // 응답 구조 추출 — 가능한 모든 래핑 형태 대응
+
+            // 응답 구조 추출
             let list;
             if (Array.isArray(data)) {
                 list = data;
@@ -136,9 +140,35 @@ export default function TreatmentModal({
             } else if (Array.isArray(data.treatment_catalog)) {
                 list = data.treatment_catalog;
             } else {
-                // 최후 수단: 객체의 첫 번째 배열 프로퍼티 탐색
                 list = Object.values(data).find((v) => Array.isArray(v)) || [];
             }
+
+            // brand별 필터링: 각 항목에서 brand 관련 필드를 찾아 현재 로그인 brand와 매칭
+            if (brand && list.length > 1) {
+                // [임시 디버그] 첫 항목의 키와 값을 콘솔에 출력하여 brand 필드명 확인
+                if (list[0]) {
+                    console.log('[CATALOG] 현재 brand:', brand);
+                    console.log('[CATALOG] 첫 항목 키:', Object.keys(list[0]));
+                    console.log('[CATALOG] 첫 항목 전체:', list[0]);
+                }
+                const brandLower = brand.toLowerCase();
+                const filtered = list.filter((item) => {
+                    // 가능한 모든 brand 관련 필드 탐색
+                    const candidates = [
+                        item.brand, item.clinic, item.clinicName, item.clinic_name,
+                        item.brandId, item.brand_id, item.admin_id, item.adminId,
+                        item.owner, item.created_by, item.createdBy,
+                    ];
+                    const itemBrand = candidates.find((v) => v)?.toString().toLowerCase() || '';
+                    if (!itemBrand) return true; // 필드 자체가 없으면 통과 (필터 불가)
+                    return itemBrand === brandLower || itemBrand.includes(brandLower) || brandLower.includes(itemBrand);
+                });
+                // 필터링으로 줄어들었으면 적용 (brand 필드가 있는 데이터)
+                if (filtered.length > 0 && filtered.length < list.length) {
+                    list = filtered;
+                }
+            }
+
             setCatalog(list);
         } catch (err) {
             console.error('treatment-catalog 로드 실패:', err);
@@ -170,7 +200,7 @@ export default function TreatmentModal({
     const handleAddItem = () => {
         setTreatmentItems((prev) => [
             ...prev,
-            { id: Date.now() + Math.random(), careName: '', careType: 'skincare', partOfBody: [], totalSessions: 1 },
+            { id: Date.now() + Math.random(), careName: '', partOfBody: [], totalSessions: 1 },
         ]);
     };
 
@@ -193,7 +223,7 @@ export default function TreatmentModal({
         );
     };
 
-    // 카탈로그 선택 시 careType & 추천 bodyParts 자동 매핑
+    // 카탈로그 선택 시 추천 bodyParts 자동 매핑
     const handleCatalogSelect = (id, catalogItem) => {
         setTreatmentItems((prev) =>
             prev.map((item) => {
@@ -201,7 +231,6 @@ export default function TreatmentModal({
                 return {
                     ...item,
                     careName: catalogItem.care_name || catalogItem.careName || catalogItem.name || catalogItem.treatmentName || catalogItem.treatment_name || '',
-                    careType: catalogItem.care_type || catalogItem.careType || catalogItem.type || 'skincare',
                     partOfBody: catalogItem.body_parts || catalogItem.bodyParts || item.partOfBody || [],
                 };
             })
@@ -255,7 +284,6 @@ export default function TreatmentModal({
             const requests = treatmentItems.map((item) => {
                 const payload = {
                     careName: item.careName.trim(),
-                    careType: item.careType || 'skincare',
                     careDate: careDate,
                     partOfBody: item.partOfBody || [],
                     ...(memo.trim() && { memo: memo.trim() }),
@@ -267,8 +295,6 @@ export default function TreatmentModal({
                 } else {
                     payload.totalSessions = item.totalSessions || 1;
                 }
-
-                console.log('[DEBUG] Final Care Record Payload:', payload);
 
                 return fetch(`${baseUrl}/api/v1/patients/${patientId}/care-records`, {
                     method: 'POST',
@@ -346,6 +372,7 @@ export default function TreatmentModal({
                             type="date"
                             value={date}
                             onChange={(e) => setDate(e.target.value)}
+                            min={new Date().toISOString().split('T')[0]}
                             className="form-input date-input"
                             required
                             disabled={isSubmitting}
@@ -464,6 +491,7 @@ function TreatmentItemRow({
 }) {
     const [nameQuery, setNameQuery] = useState(item.careName || '');
     const [showNameDropdown, setShowNameDropdown] = useState(false);
+    const [isTyping, setIsTyping] = useState(false); // 사용자가 직접 타이핑 중인지 구분
     const [showBodyDropdown, setShowBodyDropdown] = useState(false);
 
     const nameRef = useRef(null);
@@ -492,8 +520,8 @@ function TreatmentItemRow({
     // 카탈로그 항목에서 관리명 추출 헬퍼
     const getCatalogName = (c) => c.care_name || c.careName || c.name || c.treatmentName || c.treatment_name || '';
 
-    // 카탈로그 필터링 (검색어 기반 — 빈 문자열이면 전체 표시)
-    const filteredCatalog = nameQuery.trim() === ''
+    // 카탈로그 필터링: 사용자가 타이핑 중일 때만 필터, 그 외에는 전체 목록
+    const filteredCatalog = (!isTyping || nameQuery.trim() === '')
         ? catalog
         : catalog.filter((c) => {
             const name = getCatalogName(c);
@@ -504,20 +532,15 @@ function TreatmentItemRow({
     const handleNameInputChange = (e) => {
         const value = e.target.value;
         setNameQuery(value);
+        setIsTyping(true); // 사용자가 직접 타이핑 중
         onItemChange(item.id, 'careName', value);
-        // 카탈로그에 매칭 안 되면 기본 careType
-        const match = catalog.find(
-            (c) => getCatalogName(c).toLowerCase() === value.toLowerCase()
-        );
-        if (!match) {
-            onItemChange(item.id, 'careType', 'skincare');
-        }
         setShowNameDropdown(true);
     };
 
     // 드롭다운 화살표 클릭 핸들러
     const handleArrowClick = () => {
         if (isSubmitting) return;
+        setIsTyping(false); // 화살표 클릭 시 전체 목록 표시
         setShowNameDropdown((prev) => !prev);
         // 드롭다운 열면서 input에 포커스
         if (nameInputRef.current) {
@@ -529,6 +552,7 @@ function TreatmentItemRow({
     const handleSelectCatalogItem = (catalogItem) => {
         onCatalogSelect(item.id, catalogItem);
         setNameQuery(getCatalogName(catalogItem));
+        setIsTyping(false); // 선택 완료 — 다음에 드롭다운 열면 전체 목록 표시
         setShowNameDropdown(false);
     };
 
@@ -556,7 +580,7 @@ function TreatmentItemRow({
                         type="text"
                         value={nameQuery}
                         onChange={handleNameInputChange}
-                        onFocus={() => setShowNameDropdown(true)}
+                        onFocus={() => { setIsTyping(false); setShowNameDropdown(true); }}
                         placeholder="관리명을 입력하거나 선택하세요"
                         className="form-input combobox-input"
                         disabled={isSubmitting}

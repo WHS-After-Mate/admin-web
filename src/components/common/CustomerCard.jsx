@@ -89,10 +89,26 @@ function getLatestCare(customer) {
 
 /**
  * 관리 이력 건수 계산
+ * 우선순위: 백엔드 count 필드 → 배열 길이 → latestCareName 존재 시 최소 1
  */
 function getCareCount(customer) {
-    const records = Array.isArray(customer.careRecords) ? customer.careRecords : (customer.care_records || customer.treatments || customer.history || []);
-    return customer.totalCareCount || customer.total_care_count || customer.historyCount || customer.history_count || records.length || 0;
+    if (!customer) return 0;
+
+    // 1. 백엔드 명시적 count 필드 (nullish coalescing)
+    const backendCount = customer.historyCount ?? customer.history_count ?? customer.total_care_count ?? customer.totalCareCount ?? customer.care_count ?? null;
+    if (backendCount !== null && backendCount !== undefined) return backendCount;
+
+    // 2. 배열 길이 합산
+    const careRecords = Array.isArray(customer.careRecords) ? customer.careRecords : (customer.care_records || []);
+    const reservations = Array.isArray(customer.reservations) ? customer.reservations : [];
+    const totalFromArrays = careRecords.length + reservations.length;
+    if (totalFromArrays > 0) return totalFromArrays;
+
+    // 3. latestCareName이 있으면 최소 1건 이상 존재
+    const hasLatestCare = customer.latestCareName || customer.latest_care_name || customer.lastTreatment || customer.last_treatment;
+    if (hasLatestCare) return 1;
+
+    return 0;
 }
 
 /**
@@ -136,15 +152,12 @@ export default function CustomerCard({ customer, onOpenDetailModal, onRefreshDat
 
             {/* 관리 이력 배지 */}
             <div className="cc-badge-area">
-                <span
-                    className={`cc-badge ${historyCount > 0 ? 'cc-badge--active' : ''}`}
-                    style={historyCount > 0 ? { backgroundColor: `${brandColor}22` } : undefined}
-                >
+                <span className={`cc-badge ${historyCount > 0 ? 'cc-badge--active' : ''}`}>
                     <span
                         className="cc-badge-dot"
                         style={{ backgroundColor: brandColor }}
                     ></span>
-                    {historyCount > 0 ? `${historyCount}건의 관리` : '관리 이력 없음'}
+                    {historyCount > 0 ? `${historyCount}건의 관리 이력` : '관리 이력 없음'}
                 </span>
             </div>
 

@@ -8,7 +8,7 @@ export default function Modal({ isOpen, onClose, title, subtitle, size = 'defaul
     return (
         <div className="modal-overlay" onClick={onClose}>
             <div
-                className={`modal-container ${size === 'large' ? 'large' : ''}`}
+                className={`modal-container ${size === 'large' ? 'large' : size === 'xlarge' ? 'xlarge' : ''}`}
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="modal-header">

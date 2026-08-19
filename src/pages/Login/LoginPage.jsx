@@ -68,16 +68,20 @@ export default function LoginPage() {
         return;
       }
 
-      // 로그인 성공 시 토큰 및 클리닉 정보 저장
-      if (data.token) {
-        localStorage.setItem('token', data.token);
+      // 로그인 성공 시 — 필수 필드 유효성 검증
+      if (!data.token || !data.brand) {
+        setPasswordError('올바르지 않은 클리닉 계정 정보입니다. 관리자에게 문의하세요.');
+        localStorage.clear();
+        return;
       }
-      if (data.username) {
-        localStorage.setItem('username', data.username);
-      }
-      if (data.brand) {
-        localStorage.setItem('brand', data.brand);
-      }
+
+      // 이전 세션 데이터를 완전히 초기화 (모든 키 제거)
+      localStorage.clear();
+
+      // 새 세션 인증 데이터 저장
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('username', data.username || username);
+      localStorage.setItem('brand', data.brand);
       localStorage.setItem('isLoggedIn', 'true');
 
       // 대시보드로 이동
@@ -125,7 +129,7 @@ export default function LoginPage() {
               <input
                 id="username"
                 type="text"
-                placeholder="amred"
+                placeholder="관리자 아이디를 입력하세요"
                 value={username}
                 onChange={(e) => {
                   setUsername(e.target.value);

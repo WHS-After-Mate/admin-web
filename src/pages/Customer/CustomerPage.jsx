@@ -69,12 +69,21 @@ export default function CustomerPage({
       const rawList = Array.isArray(data) ? data : data.patients || data.customers || [];
       const normalizedList = rawList.map((c) => {
         // careRecords fallback: latestCareName이 없으면 careRecords에서 추출
-        const careRecords = Array.isArray(c.careRecords) ? c.careRecords : (c.care_records || c.treatments || c.history || []);
+        const careRecords = Array.isArray(c.careRecords) ? c.careRecords : (c.care_records || []);
+        const reservations = Array.isArray(c.reservations) ? c.reservations : [];
         const { latestCareName, latestCareDate } = getLatestCareFromRecords(careRecords);
 
-        const lastTreatment = c.lastTreatment || c.last_treatment || c.latestCareName || c.latest_care_name || latestCareName || '관리 내역 없음';
+        // 최근 관리명: 백엔드 직접 필드 또는 careRecords에서 추출
+        const resolvedCareName = c.latestCareName || c.latest_care_name || c.lastTreatment || c.last_treatment || latestCareName || '';
+        const lastTreatment = resolvedCareName || '관리 내역 없음';
         const lastDate = c.lastDate || c.last_date || c.latestCareDate || c.latest_care_date || latestCareDate || '-';
-        const historyCount = c.historyCount || c.history_count || careRecords.length || 0;
+
+        // 관리 이력 건수: 백엔드 count 필드 → 배열 길이 → latestCareName 존재 여부로 판단
+        const totalFromArrays = careRecords.length + reservations.length;
+        let historyCount = c.historyCount ?? c.history_count ?? c.total_care_count ?? c.totalCareCount ?? c.care_count ?? null;
+        if (historyCount === null || historyCount === undefined) {
+          historyCount = totalFromArrays > 0 ? totalFromArrays : (resolvedCareName ? 1 : 0);
+        }
 
         return {
           id: c.id || c.customer_id,
@@ -86,10 +95,52 @@ export default function CustomerPage({
           lastTreatment,
           lastDate,
           historyCount,
+          careRecords,
+          reservations,
         };
       });
 
       setCustomers(normalizedList);
+
+      // 각 고객의 상세 API를 비동기로 호출하여 정확한 관리 이력 건수 업데이트
+      normalizedList.forEach(async (customer) => {
+        if (!customer.id) return;
+        try {
+          const detailRes = await fetch(`${baseUrl}/api/v1/patients/${customer.id}`, {
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token && { Authorization: `Bearer ${token}` }),
+            },
+          });
+          if (!detailRes.ok) return;
+          const detailData = await detailRes.json();
+
+          // 응답 구조 정규화: careRecords가 상위/하위 어디에 있든 추출
+          let detail;
+          if (detailData.data) {
+            detail = detailData.data;
+          } else if (detailData.patient) {
+            detail = {
+              ...detailData.patient,
+              careRecords: detailData.patient.careRecords || detailData.careRecords || detailData.care_records || [],
+              reservations: detailData.patient.reservations || detailData.reservations || [],
+            };
+          } else {
+            detail = detailData;
+          }
+
+          const records = Array.isArray(detail.careRecords) ? detail.careRecords : (detail.care_records || []);
+          const reservs = Array.isArray(detail.reservations) ? detail.reservations : [];
+          const actualCount = records.length + reservs.length;
+
+          // 항상 업데이트 (0건도 포함 — 이전 fallback '1' 값을 덮어씀)
+          setCustomers((prev) =>
+            prev.map((c) => c.id === customer.id ? { ...c, historyCount: actualCount, careRecords: records, reservations: reservs } : c)
+          );
+        } catch (e) {
+          // 개별 실패는 무시
+        }
+      });
     } catch (err) {
       console.error('고객 목록 불러오기 실패:', err);
       setError('고객 목록을 불러오는 중 오류가 발생했습니다.');
@@ -238,7 +289,7 @@ export default function CustomerPage({
                       className="dot"
                       style={{ backgroundColor: getCurrentBrandColor() }}
                     ></span>
-                    {customer.historyCount > 0 ? `${customer.historyCount}건의 관리` : '관리 이력 없음'}
+                    {customer.historyCount > 0 ? `${customer.historyCount}건의 관리 이력` : '관리 이력 없음'}
                   </span>
                 </div>
 

@@ -8,6 +8,18 @@
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
+@media (max-width: 1024px) {
+  .dashboard-content {
+    padding: 30px 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-content {
+    padding: 20px 16px;
+  }
+}
+
 /* 1. 상단 탑바 (대시보드 / 관리자) */
 /* 헤더 (타이틀 + 버튼) */
 .dashboard-header {
@@ -53,6 +65,18 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
   margin-bottom: 48px;
+}
+
+@media (max-width: 900px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .stat-card {
@@ -129,7 +153,9 @@
 }
 
 .cust-personal {
-  width: 220px;
+  min-width: 140px;
+  max-width: 220px;
+  flex: 1;
 }
 
 .cust-name {
@@ -171,7 +197,9 @@
 .cust-treatment {
   display: flex;
   flex-direction: column;
-  width: 180px;
+  min-width: 120px;
+  max-width: 180px;
+  flex: 1;
 }
 
 .treatment-label {

@@ -268,6 +268,7 @@
     align-items: center;
     justify-content: center;
     border-radius: 4px;
+    z-index: 2;
 }
 
 .combobox-arrow-btn:hover {
@@ -481,4 +482,14 @@
 
 .treatment-form .form-textarea::placeholder {
     color: #a0a0a0;
+}
+
+
+/* 입력 필드 클릭/포커스 보장 */
+.treatment-form .form-input,
+.treatment-form .form-textarea,
+.treatment-form .combobox-input {
+    position: relative;
+    z-index: 1;
+    pointer-events: auto;
 }

@@ -73,6 +73,7 @@ function AdminLayout({
         <CustomerModal
           isOpen={isCustomerModalOpen}
           onClose={() => setIsCustomerModalOpen(false)}
+          onRefreshData={onRefreshData}
         />
       )}
 

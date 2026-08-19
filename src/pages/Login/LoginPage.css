@@ -188,3 +188,17 @@
   display: block;
   text-align: left;
 }
+
+
+@media (max-width: 768px) {
+  .login-container {
+    flex-direction: column;
+  }
+  .login-left {
+    display: none;
+  }
+  .login-right {
+    flex: 1;
+    padding: 40px 24px;
+  }
+}

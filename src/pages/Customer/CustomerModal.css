@@ -8,3 +8,15 @@
 }
 
 /* 특수 폼 커스텀이 필요할 경우 여기에만 추가 */
+
+/* 필드 에러 스타일 */
+.input-error {
+    border-color: #ef4444 !important;
+}
+
+.field-error {
+    color: #ef4444;
+    font-size: 12px;
+    margin-top: 4px;
+    display: block;
+}

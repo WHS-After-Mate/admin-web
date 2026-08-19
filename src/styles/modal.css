@@ -33,6 +33,10 @@
     max-width: 600px;
 }
 
+.modal-container.xlarge {
+    max-width: 720px;
+}
+
 /* 2. 헤더 및 닫기 버튼 */
 .modal-header {
     display: flex;

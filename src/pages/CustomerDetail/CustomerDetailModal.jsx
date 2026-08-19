@@ -112,7 +112,7 @@ export default function CustomerDetailModal({
     const name = detailData.name || '정보 없음';
     const phone = formatPhone(detailData.phone || detailData.phone_number || '');
     const birthDate = detailData.birth_date || detailData.birthDate || detailData.birth || '-';
-    const memo = detailData.memo || '';
+    const memo = detailData.memo || detailData.note || detailData.notes || detailData.comment || detailData.remark || '';
     const patientId = detailData.id || detailData.patient_id || detailData.patientId || '';
 
     // 백엔드 명세: careRecords (완료된 시술 기록)

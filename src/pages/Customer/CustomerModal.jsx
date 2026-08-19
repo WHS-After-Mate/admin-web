@@ -9,38 +9,39 @@ export default function CustomerModal({ isOpen, onClose, onAddCustomer, onRefres
         birthdate: '',
         memo: '',
     });
+    const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // 모달이 열리거나 닫힐 때 상태 리셋
     useEffect(() => {
         if (isOpen) {
             setIsSubmitting(false);
+            setErrors({});
         } else {
-            // 모달이 닫힐 때 폼 초기화
             setFormData({ name: '', phone: '', birthdate: '', memo: '' });
+            setErrors({});
             setIsSubmitting(false);
         }
     }, [isOpen]);
 
-    // 전화번호 자동 포맷팅 함수 (숫자만 추출 후 010-0000-0000 형태로 변환)
+    // 전화번호 자동 포맷팅 함수
     const formatPhoneNumber = (value) => {
         if (!value) return '';
-        const raw = value.replace(/[^0-9]/g, ''); // 숫자 이외 제거
-
-        if (raw.length <= 3) {
-            return raw;
-        } else if (raw.length <= 7) {
-            return `${raw.slice(0, 3)}-${raw.slice(3)}`;
-        } else {
-            return `${raw.slice(0, 3)}-${raw.slice(3, 7)}-${raw.slice(7, 11)}`;
-        }
+        const raw = value.replace(/[^0-9]/g, '');
+        if (raw.length <= 3) return raw;
+        if (raw.length <= 7) return `${raw.slice(0, 3)}-${raw.slice(3)}`;
+        return `${raw.slice(0, 3)}-${raw.slice(3, 7)}-${raw.slice(7, 11)}`;
     };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
 
+        // 입력 시 해당 필드의 에러 메시지 제거
+        if (errors[name]) {
+            setErrors((prev) => ({ ...prev, [name]: '' }));
+        }
+
         if (name === 'phone') {
-            // 전화번호 입력 시 자동으로 하이픈(-) 포맷 적용
             const formattedPhone = formatPhoneNumber(value);
             setFormData((prev) => ({ ...prev, phone: formattedPhone }));
         } else {
@@ -51,40 +52,38 @@ export default function CustomerModal({ isOpen, onClose, onAddCustomer, onRefres
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // 중복 제출 방지
         if (isSubmitting) return;
 
+        // 사용자 지정 유효성 검사
+        const newErrors = {};
         if (!formData.name.trim()) {
-            alert('이름을 입력해 주세요.');
-            return;
+            newErrors.name = '이름을 입력하세요.';
         }
-
         if (!formData.phone.trim()) {
-            alert('전화번호를 입력해 주세요.');
-            return;
+            newErrors.phone = '전화번호를 입력하세요.';
+        }
+        if (!formData.birthdate) {
+            newErrors.birthdate = '생일을 입력하세요.';
         }
 
-        if (!formData.birthdate) {
-            alert('생년월일을 선택해 주세요.');
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
             return;
         }
 
         try {
-            setIsSubmitting(true); // 입력칸 비활성화 시작
+            setIsSubmitting(true);
 
-            // 1. 백엔드 URL 및 인증 토큰 준비
             const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4100';
             const token = localStorage.getItem('token');
 
-            // 2. 백엔드 API 명세(POST /api/v1/patients) 규격에 맞게 Payload 생성
             const payload = {
                 name: formData.name.trim(),
                 phone: formData.phone.replace(/[^0-9]/g, ''),
-                birthDate: formData.birthdate, // 'YYYY-MM-DD'
+                birthDate: formData.birthdate,
                 memo: formData.memo.trim() || undefined,
             };
 
-            // 3. API 호출
             const response = await fetch(`${baseUrl}/api/v1/patients`, {
                 method: 'POST',
                 headers: {
@@ -103,11 +102,11 @@ export default function CustomerModal({ isOpen, onClose, onAddCustomer, onRefres
 
             alert('신규 고객이 성공적으로 등록되었습니다.');
 
-            // 폼 초기화 및 모달 닫기
             setFormData({ name: '', phone: '', birthdate: '', memo: '' });
+            setErrors({});
 
             if (onRefreshData) {
-                await onRefreshData(); // 목록 새로고침
+                await onRefreshData();
             }
 
             onClose();
@@ -115,7 +114,6 @@ export default function CustomerModal({ isOpen, onClose, onAddCustomer, onRefres
             console.error('고객 등록 실패:', error);
             alert(`고객 등록에 실패했습니다: ${error.message}`);
         } finally {
-            // 성공/실패 여부와 관계없이 제출 상태 해제
             setIsSubmitting(false);
         }
     };
@@ -127,7 +125,7 @@ export default function CustomerModal({ isOpen, onClose, onAddCustomer, onRefres
             title="신규 고객 등록"
             subtitle="고객 기본 정보만 간단히 등록합니다."
         >
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} noValidate>
                 <div className="form-group">
                     <label className="form-label">이름 *</label>
                     <input
@@ -136,10 +134,10 @@ export default function CustomerModal({ isOpen, onClose, onAddCustomer, onRefres
                         placeholder="홍길동"
                         value={formData.name}
                         onChange={handleChange}
-                        className="form-input"
-                        required
+                        className={`form-input ${errors.name ? 'input-error' : ''}`}
                         disabled={isSubmitting}
                     />
+                    {errors.name && <span className="field-error">{errors.name}</span>}
                 </div>
 
                 <div className="form-group">
@@ -150,24 +148,27 @@ export default function CustomerModal({ isOpen, onClose, onAddCustomer, onRefres
                         placeholder="010-0000-0000"
                         value={formData.phone}
                         onChange={handleChange}
-                        maxLength={13} // 010-1234-5678 (최대 13자)
-                        className="form-input"
-                        required
+                        maxLength={13}
+                        className={`form-input ${errors.phone ? 'input-error' : ''}`}
                         disabled={isSubmitting}
                     />
+                    {errors.phone && <span className="field-error">{errors.phone}</span>}
                 </div>
 
                 <div className="form-group">
                     <label className="form-label">생일 *</label>
                     <input
-                        type="date"
+                        type="text"
                         name="birthdate"
                         value={formData.birthdate}
                         onChange={handleChange}
-                        className="form-input date-input"
-                        required
+                        onFocus={(e) => { e.target.type = 'date'; }}
+                        onBlur={(e) => { if (!e.target.value) e.target.type = 'text'; }}
+                        placeholder="YYYY-MM-DD"
+                        className={`form-input date-input ${errors.birthdate ? 'input-error' : ''}`}
                         disabled={isSubmitting}
                     />
+                    {errors.birthdate && <span className="field-error">{errors.birthdate}</span>}
                 </div>
 
                 <div className="form-group">
