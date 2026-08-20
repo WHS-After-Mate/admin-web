@@ -274,6 +274,9 @@ export default function TreatmentModal({
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        // 더블클릭/중복 제출(Enter 암묵 제출과 버튼 클릭이 겹치는 경우 등) 방지
+        if (isSubmitting) return;
+
         // 유효성 검사
         const isInvalid = treatmentItems.some(
             (item) => !item.careName.trim() || item.partOfBody.length === 0
@@ -389,8 +392,12 @@ export default function TreatmentModal({
                             type="date"
                             value={date}
                             onChange={(e) => setDate(e.target.value)}
-                            onClick={(e) => { if (e.target.showPicker) e.target.showPicker(); }}
-                            min={(() => { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`; })()}
+                            onClick={(e) => {
+                                if (typeof e.target.showPicker === 'function') {
+                                    try { e.target.showPicker(); } catch (err) { /* 지원하지 않는 브라우저는 무시 */ }
+                                }
+                            }}
+                            min={new Date().toISOString().split('T')[0]}
                             className="form-input date-input"
                             required
                             disabled={isSubmitting}
@@ -601,6 +608,10 @@ function TreatmentItemRow({
                         value={nameQuery}
                         onChange={handleNameInputChange}
                         onFocus={() => { setIsTyping(false); setShowNameDropdown(true); }}
+                        onKeyDown={(e) => {
+                            // Enter로 인한 암묵적 폼 제출(버튼 클릭과 겹쳐 이중 등록될 수 있음) 방지
+                            if (e.key === 'Enter') e.preventDefault();
+                        }}
                         placeholder="관리명을 입력하거나 선택하세요"
                         className="form-input combobox-input"
                         disabled={isSubmitting}

@@ -162,7 +162,17 @@ export default function CustomerModal({ isOpen, onClose, onAddCustomer, onRefres
                         name="birthdate"
                         value={formData.birthdate}
                         onChange={handleChange}
-                        onKeyDown={(e) => e.preventDefault()}
+                        onFocus={(e) => { e.target.type = 'date'; }}
+                        onClick={(e) => {
+                            if (e.target.type !== 'date') {
+                                e.target.type = 'date';
+                            }
+                            if (typeof e.target.showPicker === 'function') {
+                                try { e.target.showPicker(); } catch (err) { /* 지원하지 않는 브라우저는 무시 */ }
+                            }
+                        }}
+                        onBlur={(e) => { if (!e.target.value) e.target.type = 'text'; }}
+                        placeholder="YYYY-MM-DD"
                         className={`form-input date-input ${errors.birthdate ? 'input-error' : ''}`}
                         disabled={isSubmitting}
                     />

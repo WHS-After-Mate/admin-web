@@ -62,7 +62,42 @@ export default function DashboardPage({
         return dateB - dateA;
       });
 
-      setRecentCustomers(sorted.slice(0, 5));
+      const topCustomers = sorted.slice(0, 5);
+      setRecentCustomers(topCustomers);
+
+      // 목록 API는 관리 이력 건수를 내려주지 않으므로, 고객관리 페이지와 동일하게
+      // 각 고객의 상세 API를 추가 호출하여 정확한 건수로 갱신 (CustomerPage.jsx와 통일)
+      topCustomers.forEach(async (customer) => {
+        if (!customer.id) return;
+        try {
+          const detailRes = await fetch(`${baseUrl}/api/v1/patients/${customer.id}`, { headers });
+          if (!detailRes.ok) return;
+          const detailData = await detailRes.json();
+
+          let detail;
+          if (detailData.data) {
+            detail = detailData.data;
+          } else if (detailData.patient) {
+            detail = {
+              ...detailData.patient,
+              careRecords: detailData.patient.careRecords || detailData.careRecords || detailData.care_records || [],
+              reservations: detailData.patient.reservations || detailData.reservations || [],
+            };
+          } else {
+            detail = detailData;
+          }
+
+          const records = Array.isArray(detail.careRecords) ? detail.careRecords : (detail.care_records || []);
+          const reservs = Array.isArray(detail.reservations) ? detail.reservations : [];
+          const actualCount = records.length + reservs.length;
+
+          setRecentCustomers((prev) =>
+            prev.map((c) => c.id === customer.id ? { ...c, historyCount: actualCount, careRecords: records, reservations: reservs } : c)
+          );
+        } catch (e) {
+          // 개별 실패는 무시
+        }
+      });
     } catch (err) {
       console.error('최근 고객 조회 실패:', err);
     }

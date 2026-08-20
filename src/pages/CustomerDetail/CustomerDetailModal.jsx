@@ -381,7 +381,16 @@ export default function CustomerDetailModal({
 
                         {/* 2. 예약 내역 Section */}
                         <section className="detail-section">
-                            <h3 className="section-title">예약 내역</h3>
+                            <div className="section-header">
+                                <h3 className="section-title">예약 내역</h3>
+                                <button
+                                    type="button"
+                                    className="btn-add-treatment"
+                                    onClick={handleOpenTreatment}
+                                >
+                                    + 관리 등록
+                                </button>
+                            </div>
                             {effectiveReservations.length > 0 ? (
                                 effectiveReservations.map((rec) => {
                                     const recordId = rec.id || rec.care_record_id || rec.careRecordId;
@@ -422,16 +431,7 @@ export default function CustomerDetailModal({
 
                         {/* 3. 관리 내역 Section (완료된 시술) */}
                         <section className="detail-section">
-                            <div className="section-header">
-                                <h3 className="section-title">관리 내역</h3>
-                                <button
-                                    type="button"
-                                    className="btn-add-treatment"
-                                    onClick={handleOpenTreatment}
-                                >
-                                    + 관리 등록
-                                </button>
-                            </div>
+                            <h3 className="section-title">관리 내역</h3>
 
                             <div className="history-list">
                                 {history.length > 0 ? (
